@@ -1,8 +1,9 @@
 (function () {
-  var _socketWrapper = null; // Global ref to htmx socketWrapper for mode changes
+  var _chatSocketWrapper = null; // Global ref to htmx socketWrapper for chat session messages
   var _historyLoaded = false; // Track if history has been loaded
   var _audioContext = null; // Lazy-initialized Web Audio context
   var SIDEBAR_SCROLL_KEY = "sidebar-scroll-top";
+  var NEW_AGENT_WORKDIR_KEY = "new-agent-workdir";
 
   function restoreSidebarScroll() {
     var sidebarContent = document.querySelector(".app-sidebar__content");
@@ -114,10 +115,49 @@
     });
   }
 
-  // Capture socketWrapper from htmx events
+  function setupNewAgentWorkdir() {
+    var input = document.getElementById("agent-workdir");
+    if (!input) return;
+
+    var stored = null;
+    try {
+      stored = localStorage.getItem(NEW_AGENT_WORKDIR_KEY);
+    } catch (_) {}
+
+    if (stored !== null) {
+      input.value = stored;
+    }
+
+    function persistWorkdir() {
+      try {
+        localStorage.setItem(NEW_AGENT_WORKDIR_KEY, input.value);
+      } catch (_) {}
+    }
+
+    input.addEventListener("input", persistWorkdir);
+    if (input.form) {
+      input.form.addEventListener("submit", persistWorkdir);
+    }
+  }
+
+  function isChatWsElement(el) {
+    if (!el || typeof el.matches !== "function") return false;
+    if (el.matches("main.chat-app[ws-connect]")) return true;
+    if (typeof el.closest === "function") {
+      return !!el.closest("main.chat-app[ws-connect]");
+    }
+    return false;
+  }
+
+  // Capture socketWrapper from htmx events (chat only)
   document.body.addEventListener("htmx:wsOpen", function (e) {
-    if (e.detail && e.detail.socketWrapper) {
-      _socketWrapper = e.detail.socketWrapper;
+    if (e.detail && e.detail.socketWrapper && isChatWsElement(e.detail.elt || e.target)) {
+      _chatSocketWrapper = e.detail.socketWrapper;
+    }
+  });
+  document.body.addEventListener("htmx:wsClose", function (e) {
+    if (e.detail && isChatWsElement(e.detail.elt || e.target)) {
+      _chatSocketWrapper = null;
     }
   });
 
@@ -420,12 +460,12 @@
 
   // Send cancel message to stop agent response
   function sendCancelResponse() {
-    if (!_socketWrapper) {
+    if (!_chatSocketWrapper) {
       console.warn("[chat] Cannot cancel - WebSocket not connected");
       return;
     }
     var msg = JSON.stringify({ event: "chat_cancel_response" });
-    _socketWrapper.sendImmediately(msg, document.body);
+    _chatSocketWrapper.sendImmediately(msg, document.body);
     console.log("[chat] Sent cancel response");
   }
 
@@ -590,13 +630,13 @@
 
     dropdown.addEventListener("change", function () {
       var modeId = dropdown.value;
-      if (!_socketWrapper) {
+      if (!_chatSocketWrapper) {
         console.warn("[chat] Cannot set mode - WebSocket not connected");
         return;
       }
 
       var msg = JSON.stringify({ event: "chat_set_mode", modeId: modeId });
-      _socketWrapper.sendImmediately(msg, dropdown);
+      _chatSocketWrapper.sendImmediately(msg, dropdown);
       console.log("[chat] Sent mode change:", modeId);
     });
   }
@@ -678,7 +718,7 @@
         return;
       }
 
-      if (!_socketWrapper) {
+      if (!_chatSocketWrapper) {
         console.warn("[chat] Cannot respond to permission - WebSocket not connected");
         return;
       }
@@ -697,7 +737,7 @@
         requestId: requestId,
         optionId: optionId,
       });
-      _socketWrapper.sendImmediately(msg, btn);
+      _chatSocketWrapper.sendImmediately(msg, btn);
       console.log("[chat] Sent permission response:", requestId, optionId);
     });
   }
@@ -1117,6 +1157,7 @@
     _historyLoaded = false;
 
     setupScrollLock();
+    setupNewAgentWorkdir();
     setupVoiceDropdown();
     setupEndSessionButton();
 

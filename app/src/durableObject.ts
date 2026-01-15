@@ -533,6 +533,8 @@ export class ClaudeContainer implements DurableObject {
           }
           if (ev === "chat_cancel_response") {
             chatSession.cancelPrompt();
+            // ACP cancellation requires pending permission requests be cancelled.
+            cancelAllPendingPermissions();
             // Also send SIGINT to interrupt agent mid-tool-call
             if (proxyHttpUrl) {
               fetch(`${proxyHttpUrl}/interrupt`, { method: "POST" }).catch(() => {});

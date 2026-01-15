@@ -4,6 +4,7 @@ import { extractSentences } from "./sentenceDetector";
 export type { PermissionRequest };
 import {
   renderChatAgentFailureSnippet,
+  renderChatAgentCancelledSnippet,
   renderChatAgentMessageSnippet,
   renderChatAgentThoughtUpdateSnippet,
   renderChatAgentUpdateSnippet,
@@ -60,6 +61,8 @@ interface PromptState {
   agentContent: string;
   thoughtContent: string;
   completed: boolean;
+  cancelled: boolean;
+  cancelNoticeShown: boolean;
   noticeCleared: boolean;
   toolMessages: Map<string, ToolMessageState>;
   textSegments: TextSegment[];
@@ -89,6 +92,7 @@ export class ChatSession {
   private started = false;
   private readonly promptStates: PromptState[] = [];
   private currentToolCallTitle: string | null = null;
+  private cancelInFlight = false;
 
   constructor(options: ChatSessionOptions) {
     this.pushSnippet = options.pushSnippet;
@@ -138,6 +142,15 @@ export class ChatSession {
           return;
         }
         const state = this.findStateByAgentMessageId(promptMeta.agentMessageId);
+        const stopReason = readStopReason(result);
+        if (stopReason === "cancelled") {
+          this.cancelInFlight = false;
+          if (state && !state.cancelNoticeShown) {
+            this.finalizeCancelledState(state);
+          }
+          return;
+        }
+        this.cancelInFlight = false;
         const fallbackContent = extractContent(result);
         const rendered = normalizeAgentContent(state, fallbackContent);
 
@@ -177,6 +190,7 @@ export class ChatSession {
       onPromptError: (_requestId, error, metadata) => {
         const promptMeta = asPromptMetadata(metadata);
         const details = `Agent error: ${stringify(error)}`;
+        this.cancelInFlight = false;
 
         // Clear working state on error
         this.currentToolCallTitle = null;
@@ -187,6 +201,13 @@ export class ChatSession {
           return;
         }
         const state = this.findStateByAgentMessageId(promptMeta.agentMessageId);
+        if (state?.cancelled) {
+          this.cancelInFlight = false;
+          if (!state.cancelNoticeShown) {
+            this.finalizeCancelledState(state);
+          }
+          return;
+        }
         const targetId = state?.agentMessageId ?? promptMeta.agentMessageId;
         this.pushSnippet(renderChatAgentFailureSnippet(details, targetId));
         if (state) {
@@ -217,6 +238,8 @@ export class ChatSession {
       return;
     }
 
+    this.cancelInFlight = false;
+
     const userMessageId = `user-${this.createId()}`;
     this.pushSnippet(renderChatUserMessageSnippet(trimmed, userMessageId));
 
@@ -229,6 +252,8 @@ export class ChatSession {
       agentContent: "",
       thoughtContent: "",
       completed: false,
+      cancelled: false,
+      cancelNoticeShown: false,
       noticeCleared: false,
       toolMessages: new Map(),
       textSegments: [],
@@ -261,6 +286,12 @@ export class ChatSession {
     }
 
     const state = this.getActivePromptState();
+    if (!state && this.cancelInFlight) {
+      return;
+    }
+    if (state?.cancelled) {
+      return;
+    }
     switch (sessionUpdateType) {
       case "agent_message_chunk": {
         this.handleAgentMessageChunk(state, update);
@@ -495,7 +526,53 @@ export class ChatSession {
    * Cancel the current prompt turn. Sends session/cancel to interrupt agent processing.
    */
   cancelPrompt(): boolean {
-    return this.protocol.cancelCurrentPrompt();
+    const cancelled = this.protocol.cancelCurrentPrompt();
+    if (cancelled) {
+      const state = this.getActivePromptState();
+      this.cancelInFlight = true;
+      this.cancelActiveToolCalls();
+      if (state) {
+        this.finalizeCancelledState(state);
+      }
+    }
+    return cancelled;
+  }
+
+  private finalizeCancelledState(state: PromptState): void {
+    if (state.cancelNoticeShown) {
+      return;
+    }
+    state.cancelled = true;
+    state.cancelNoticeShown = true;
+    state.completed = true;
+    this.pushSnippet(renderChatMessageHiddenSnippet(state.systemMessageId));
+    state.noticeCleared = true;
+    this.currentToolCallTitle = null;
+    this.onWorkingStateChange?.(false, null);
+    this.pushSnippet(renderChatAgentCancelledSnippet());
+  }
+
+  private cancelActiveToolCalls(): void {
+    const state = this.getActivePromptState();
+    if (!state || state.toolMessages.size === 0) {
+      return;
+    }
+
+    let latestTool: ToolMessageState | null = null;
+    for (const toolState of state.toolMessages.values()) {
+      if (isTerminalToolStatus(toolState.status)) {
+        continue;
+      }
+      toolState.status = "cancelled";
+      const toolData = this.toToolMessageData(toolState);
+      this.pushSnippet(renderChatToolCallUpdateSnippet(toolData));
+      latestTool = toolState;
+    }
+
+    if (latestTool) {
+      this.currentToolCallTitle = latestTool.title;
+      this.onWorkingStateChange?.(true, { title: latestTool.title, status: latestTool.status ?? null });
+    }
   }
 
   private errorId(): string {
@@ -581,8 +658,31 @@ function appendSegment(existing: string, addition: string): string {
   return `${existing}${addition}`;
 }
 
+function isTerminalToolStatus(status: string | null | undefined): boolean {
+  if (!status) {
+    return false;
+  }
+  const lower = status.toLowerCase();
+  return (
+    lower.includes("complete") ||
+    lower.includes("success") ||
+    lower.includes("done") ||
+    lower.includes("fail") ||
+    lower.includes("error") ||
+    lower.includes("cancel")
+  );
+}
+
 function readStringField(record: Record<string, unknown>, key: string): string | null {
   const value = record[key];
+  if (typeof value === "string" && value.length > 0) {
+    return value;
+  }
+  return null;
+}
+
+function readStopReason(result: Record<string, unknown>): string | null {
+  const value = result.stopReason;
   if (typeof value === "string" && value.length > 0) {
     return value;
   }

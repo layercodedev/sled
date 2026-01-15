@@ -164,6 +164,18 @@ export function renderChatErrorSnippet(content: string, id: string): string {
   );
 }
 
+export function renderChatAgentCancelledSnippet(label = "Agent Cancelled"): string {
+  return renderToString(
+    <div id="chat-message-list" hx-swap-oob="beforeend">
+      <article class="chat-message chat-message--system chat-message--cancelled chat-message--new">
+        <div class="chat-message__bubble">
+          <p class="chat-message__text">{label}</p>
+        </div>
+      </article>
+    </div>,
+  );
+}
+
 export function renderChatSystemNoticeSnippet(content: string, id: string, isThinking = true): string {
   const thinkingClass = isThinking ? " chat-message--thinking" : "";
   return renderToString(

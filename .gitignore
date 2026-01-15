@@ -33,3 +33,4 @@ lerna-debug.log*
 .DS_Store
 tmp/*
 external_repos
+internal_docs
