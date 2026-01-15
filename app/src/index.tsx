@@ -104,7 +104,7 @@ const AgentsLayout = jsxRenderer(({ children }) => {
         <script src="https://cdn.jsdelivr.net/npm/marked@17.0.1/lib/marked.umd.min.js"></script>
         <script src="/js/voice-client.js" defer></script>
         <script src="/js/chat.js" defer></script>
-        <link rel="icon" type="image/svg+xml" href="/img/favicon.png" />
+        <link rel="icon" type="image/svg+xml" href="/img/favicon.svg" />
         <link rel="stylesheet" href="/css/normalize.css" />
         <link rel="stylesheet" href="/css/milligram.css" />
         <link rel="stylesheet" href="/css/blue-retro.css" />

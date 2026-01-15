@@ -28,6 +28,7 @@ interface ChatSessionOptions {
   createId?: CreateId;
   initialPermissionMode: string;
   sessionCwd?: string;
+  debug?: boolean;
   /** Session ID to resume (for Claude Code agents). When provided, the agent will attempt to resume the previous session. */
   resumeSessionId?: string;
   onNewMessage?: (role: "user" | "assistant", content: string) => void;
@@ -88,6 +89,7 @@ export class ChatSession {
   private readonly onPermissionRequest?: (request: PermissionRequest) => void;
   private readonly onSentenceReady?: (sentence: string) => void;
   private readonly onWorkingStateChange?: (isWorking: boolean, toolCall: { title: string; status: string | null } | null) => void;
+  private readonly debugEnabled: boolean;
 
   private started = false;
   private readonly promptStates: PromptState[] = [];
@@ -105,6 +107,7 @@ export class ChatSession {
     this.onPermissionRequest = options.onPermissionRequest;
     this.onSentenceReady = options.onSentenceReady;
     this.onWorkingStateChange = options.onWorkingStateChange;
+    this.debugEnabled = options.debug ?? false;
 
     this.protocol = new AgentProtocolSession({
       sendUpstream: options.sendUpstream,
@@ -140,6 +143,7 @@ export class ChatSession {
       onPromptResult: (_requestId, result, metadata) => {
         const promptMeta = asPromptMetadata(metadata);
         if (!promptMeta) {
+          this.logDebug("[chatSession] prompt_result missing_metadata");
           this.pushSnippet(renderChatErrorSnippet("Agent response missing metadata.", this.errorId()));
           return;
         }
@@ -155,6 +159,9 @@ export class ChatSession {
         this.cancelInFlight = false;
         const fallbackContent = extractContent(result);
         const rendered = normalizeAgentContent(state, fallbackContent);
+        this.logDebug(
+          `[chatSession] prompt_result agentMessageId=${promptMeta.agentMessageId} stopReason=${stopReason ?? "null"} renderedLen=${rendered.length}`,
+        );
 
         // Update the current segment with final content (or create one if none exists)
         if (state) {
@@ -184,6 +191,7 @@ export class ChatSession {
 
         // Persist full message for history
         try {
+          this.logDebug(`[chatSession] persist assistant_message len=${rendered.length}`);
           this.onNewMessage?.("assistant", rendered);
         } catch {
           /* callback error ignored */
@@ -193,6 +201,9 @@ export class ChatSession {
         const promptMeta = asPromptMetadata(metadata);
         const details = `Agent error: ${stringify(error)}`;
         this.cancelInFlight = false;
+        this.logDebug(
+          `[chatSession] prompt_error agentMessageId=${promptMeta?.agentMessageId ?? "unknown"} error=${stringify(error)}`,
+        );
 
         // Clear working state on error
         this.currentToolCallTitle = null;
@@ -240,6 +251,7 @@ export class ChatSession {
       return;
     }
 
+    this.logDebug(`[chatSession] user_message len=${trimmed.length}`);
     this.cancelInFlight = false;
     this.clearOrphanAgentMessage();
 
@@ -275,6 +287,7 @@ export class ChatSession {
     }
     // Persist user message
     try {
+      this.logDebug(`[chatSession] persist user_message len=${trimmed.length}`);
       this.onNewMessage?.("user", trimmed);
     } catch {
       /* callback error ignored */
@@ -604,6 +617,17 @@ export class ChatSession {
 
   private errorId(): string {
     return `error-${this.createId()}`;
+  }
+
+  private logDebug(message: string): void {
+    if (!this.debugEnabled) {
+      return;
+    }
+    try {
+      console.log(message);
+    } catch {
+      /* ignored */
+    }
   }
 }
 

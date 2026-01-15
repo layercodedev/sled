@@ -104,9 +104,6 @@ export function renderChatAgentMessageSnippet(content: string, id: string): stri
   return renderToString(
     <div id="chat-message-list" hx-swap-oob="beforeend">
       <article class="chat-message chat-message--agent chat-message--new" id={id}>
-        <div class="chat-message__avatar" aria-hidden="true">
-          <span>C</span>
-        </div>
         <div class="chat-message__content">
           <div class="chat-message__bubble">
             <div class="chat-message__text chat-message__text--markdown" dangerouslySetInnerHTML={{ __html: htmlContent }} />
@@ -124,9 +121,6 @@ export function renderChatAgentUpdateSnippet(content: string, id: string): strin
   const htmlContent = parseMarkdown(content);
   return renderToString(
     <article class="chat-message chat-message--agent" id={id} hx-swap-oob="outerHTML">
-      <div class="chat-message__avatar" aria-hidden="true">
-        <span>C</span>
-      </div>
       <div class="chat-message__content">
         <div class="chat-message__bubble">
           <div class="chat-message__text chat-message__text--markdown" dangerouslySetInnerHTML={{ __html: htmlContent }} />
@@ -142,9 +136,6 @@ export function renderChatAgentFailureSnippet(content: string, id: string): stri
   const htmlContent = parseMarkdown(content);
   return renderToString(
     <article class="chat-message chat-message--agent chat-message--error" id={id} hx-swap-oob="outerHTML">
-      <div class="chat-message__avatar" aria-hidden="true">
-        <span>C</span>
-      </div>
       <div class="chat-message__bubble">
         <div class="chat-message__text chat-message__text--markdown" dangerouslySetInnerHTML={{ __html: htmlContent }} />
       </div>
@@ -196,9 +187,6 @@ export function renderChatAgentThoughtUpdateSnippet(content: string, id: string)
   const htmlContent = parseMarkdown(content);
   return renderToString(
     <article class="chat-message chat-message--agent chat-message--thought" id={id} hx-swap-oob="outerHTML">
-      <div class="chat-message__avatar" aria-hidden="true">
-        <span>C</span>
-      </div>
       <div class="chat-message__bubble">
         <div
           class="chat-message__text chat-message__text--thought chat-message__text--markdown"
@@ -213,28 +201,14 @@ export function renderChatMessageHiddenSnippet(id: string): string {
   return renderToString(<article class="chat-message chat-message--hidden" id={id} hx-swap-oob="outerHTML"></article>);
 }
 
-// Get icon letter for a tool based on its title/kind
-function getToolIcon(title: string): string {
-  const lower = title.toLowerCase();
-  if (lower.includes("read")) return "R";
-  if (lower.includes("write") || lower.includes("edit")) return "E";
-  if (lower.includes("bash") || lower.includes("shell") || lower.includes("exec")) return "$";
-  if (lower.includes("grep") || lower.includes("search")) return "S";
-  if (lower.includes("glob") || lower.includes("find")) return "G";
-  if (lower.includes("web") || lower.includes("fetch")) return "W";
-  if (lower.includes("todo")) return "T";
-  if (lower.includes("task") || lower.includes("agent")) return "A";
-  return "T"; // default tool icon
-}
-
-// Get status class for tool icon
+// Get status class for tool status dot
 function getToolStatusClass(status: string | null | undefined): string {
-  if (!status) return "chat-tool-icon--pending";
+  if (!status) return "chat-tool-status--pending";
   const lower = status.toLowerCase();
-  if (lower.includes("complet") || lower.includes("success") || lower.includes("done")) return "chat-tool-icon--success";
-  if (lower.includes("error") || lower.includes("fail")) return "chat-tool-icon--error";
-  if (lower.includes("running") || lower.includes("progress")) return "chat-tool-icon--running";
-  return "chat-tool-icon--pending";
+  if (lower.includes("complet") || lower.includes("success") || lower.includes("done")) return "chat-tool-status--success";
+  if (lower.includes("error") || lower.includes("fail")) return "chat-tool-status--error";
+  if (lower.includes("running") || lower.includes("progress")) return "chat-tool-status--running";
+  return "chat-tool-status--pending";
 }
 
 // Render a tool call as its own message (appended to chat list)
@@ -253,19 +227,14 @@ export function renderChatToolCallUpdateSnippet(data: ChatToolMessageData): stri
 
 function renderToolCallMessage(data: ChatToolMessageData, swap?: "outerHTML") {
   const swapProps = swap ? { "hx-swap-oob": swap } : {};
-  const icon = getToolIcon(data.title);
   const statusClass = getToolStatusClass(data.status);
 
   return (
     <article id={data.id} class="chat-message chat-message--tool chat-message--new" data-tool-message={data.id} {...swapProps}>
-      <div class={`chat-message__avatar chat-message__avatar--tool ${statusClass}`} aria-hidden="true">
-        <span>{icon}</span>
-      </div>
       <div class="chat-message__bubble chat-message__bubble--tool">
         <button type="button" class="chat-tool-header" data-tool-expand={data.id}>
+          <span class={`chat-tool-status ${statusClass}`} aria-hidden="true"></span>
           <span class="chat-tool-header__title">{data.title}</span>
-          <span class="chat-tool-header__status">{formatLabel(data.status ?? "pending")}</span>
-          {data.kind ? <span class="chat-tool-header__kind">{formatLabel(data.kind)}</span> : null}
           <span class="chat-tool-header__chevron">▸</span>
         </button>
         <div class="chat-tool-details is-hidden">
@@ -276,14 +245,6 @@ function renderToolCallMessage(data: ChatToolMessageData, swap?: "outerHTML") {
       </div>
     </article>
   );
-}
-
-function formatLabel(label: string): string {
-  return label
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 interface PermissionPromptOption {
@@ -314,9 +275,6 @@ export function renderPermissionPromptResolvedSnippet(id: string, selectedOption
       class="chat-message chat-message--agent chat-message--permission chat-message--permission-resolved"
       hx-swap-oob="outerHTML"
     >
-      <div class="chat-message__avatar" aria-hidden="true">
-        <span>P</span>
-      </div>
       <div class="chat-message__bubble">
         <p class="chat-permission__resolved">{selectedOption}</p>
       </div>
@@ -328,9 +286,6 @@ function renderPermissionPromptArticle(data: PermissionPromptData, swap?: "outer
   const swapProps = swap ? { "hx-swap-oob": swap } : {};
   return (
     <article id={data.id} class="chat-message chat-message--agent chat-message--permission" {...swapProps}>
-      <div class="chat-message__avatar" aria-hidden="true">
-        <span>P</span>
-      </div>
       <div class="chat-message__bubble">
         <p class="chat-permission__title">{data.title}</p>
         <div class="chat-permission__options">

@@ -91,25 +91,41 @@
     var list = document.getElementById("chat-message-list");
     if (!list) return;
 
-    // Use MutationObserver to detect tool status changes on tool message avatars
+    // Use MutationObserver to detect tool status changes on tool message dots
     var observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
         if (mutation.type === "attributes" && mutation.attributeName === "class") {
           var target = mutation.target;
-          // Check for tool avatar status classes
-          if (target.classList.contains("chat-message__avatar--tool")) {
-            if (target.classList.contains("chat-tool-icon--success")) {
+          if (target.classList && target.classList.contains("chat-tool-status")) {
+            if (target.classList.contains("chat-tool-status--success")) {
               SoundEffects.toolComplete();
-            } else if (target.classList.contains("chat-tool-icon--error")) {
+            } else if (target.classList.contains("chat-tool-status--error")) {
               SoundEffects.toolError();
             }
           }
+          return;
+        }
+
+        if (mutation.type === "childList" && mutation.addedNodes.length) {
+          mutation.addedNodes.forEach(function (node) {
+            if (!node || node.nodeType !== 1) return;
+            var statusEl = node.classList && node.classList.contains("chat-tool-status")
+              ? node
+              : node.querySelector && node.querySelector(".chat-tool-status");
+            if (!statusEl) return;
+            if (statusEl.classList.contains("chat-tool-status--success")) {
+              SoundEffects.toolComplete();
+            } else if (statusEl.classList.contains("chat-tool-status--error")) {
+              SoundEffects.toolError();
+            }
+          });
         }
       });
     });
 
     observer.observe(list, {
       attributes: true,
+      childList: true,
       subtree: true,
       attributeFilter: ["class"],
     });
@@ -264,7 +280,6 @@
     article.className = "chat-message chat-message--agent";
     article.id = id;
     article.innerHTML =
-      '<div class="chat-message__avatar" aria-hidden="true"><span>C</span></div>' +
       '<div class="chat-message__content">' +
       '<div class="chat-message__bubble">' +
       '<div class="chat-message__text chat-message__text--markdown">' +
@@ -291,6 +306,11 @@
   // Fetch and render conversation history
   // agentId parameter is optional - if provided, uses that instead of URL parsing
   function loadHistory(agentId) {
+    var list = document.getElementById("chat-message-list");
+    if (!list) {
+      return;
+    }
+
     // Use provided agentId or fall back to URL parsing
     var resolvedAgentId = agentId || getAgentIdFromUrl();
     console.log("[chat] loadHistory called, agentId=" + resolvedAgentId + ", url=" + window.location.pathname);
@@ -300,11 +320,6 @@
     }
 
     var placeholder = document.getElementById("agent-ready-placeholder");
-    var list = document.getElementById("chat-message-list");
-    if (!list) {
-      console.warn("[chat] chat-message-list not found");
-      return;
-    }
 
     if (list.dataset.historyAgent === resolvedAgentId) {
       if (list.dataset.historyLoaded === "true" || list.dataset.historyLoading === "true") {

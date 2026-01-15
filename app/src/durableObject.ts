@@ -113,6 +113,10 @@ export class ClaudeContainer implements DurableObject {
       if (method === "GET") {
         const cursor = sql.exec("SELECT id, role, content, created_at FROM messages ORDER BY created_at ASC");
         const messages = [...cursor];
+        if (debugEnabled(this.env)) {
+          const last = messages.length > 0 ? (messages[messages.length - 1] as { id?: string }) : null;
+          console.log(`[do] history get count=${messages.length} last_id=${last?.id ?? "none"}`);
+        }
 
         // Note: We do NOT mark messages as heard here.
         // Messages are marked as heard by the voice client after TTS playback.
@@ -270,6 +274,7 @@ export class ClaudeContainer implements DurableObject {
         // Detect messages that should trigger sidebar notification
         const id = parsed?.id;
         const method = parsed?.method;
+        const updateType = method === "session/update" ? readSessionUpdateType(parsed) : null;
 
         // Permission request (numeric id + method) - always notify with "permission" type
         if (typeof id === "number" && method === "session/request_permission") {
@@ -280,13 +285,18 @@ export class ClaudeContainer implements DurableObject {
         }
         // Session update (agent responding) - notify only for actual agent message chunks when no browser connected
         else if (method === "session/update" && !this.chatActive) {
-          const updateType = readSessionUpdateType(parsed);
           if (updateType === "agent_message_chunk") {
             await this.setAttentionType("message");
             if (debugEnabled(this.env)) {
               console.log(`[do] messages/receive agent_message_chunk detected (no browser), set attentionType=message`);
             }
           }
+        }
+        if (debugEnabled(this.env)) {
+          const idLabel = typeof id === "number" || typeof id === "string" ? id : "none";
+          const methodLabel = typeof method === "string" ? method : "none";
+          const updateLabel = updateType ?? "none";
+          console.log(`[do] messages/receive parsed method=${methodLabel} id=${idLabel} update=${updateLabel}`);
         }
       } catch {
         // Not JSON, ignore
@@ -299,7 +309,9 @@ export class ClaudeContainer implements DurableObject {
       if (this.activeChatSession && parsed) {
         const handled = this.activeChatSession.handleAgentMessage(parsed);
         if (debugEnabled(this.env)) {
-          console.log(`[do] messages/receive handled=${handled} line_len=${line.length}`);
+          const method = typeof parsed?.method === "string" ? parsed.method : "none";
+          const id = typeof parsed?.id === "number" || typeof parsed?.id === "string" ? parsed.id : "none";
+          console.log(`[do] messages/receive handled=${handled} method=${method} id=${id} line_len=${line.length}`);
         }
       } else if (debugEnabled(this.env) && parsed) {
         console.log(`[do] messages/receive no active chat session`);
@@ -443,7 +455,13 @@ export class ClaudeContainer implements DurableObject {
       initialPermissionMode: yolo ? "bypassPermissions" : "default",
       sessionCwd: runtime.cwd ?? undefined,
       resumeSessionId: runtime.acpSessionId ?? undefined,
+      debug: debugEnabled(this.env),
       onNewMessage: async (role, content) => {
+        if (debugEnabled(this.env)) {
+          console.log(
+            `[do] onNewMessage role=${role} len=${content.length} agentId=${this.agentId ?? "unknown"}`,
+          );
+        }
         try {
           await this.recordHistory(role, content);
         } catch {
@@ -634,14 +652,22 @@ export class ClaudeContainer implements DurableObject {
 
   private async recordHistory(role: "user" | "assistant", content: string): Promise<void> {
     try {
+      if (debugEnabled(this.env)) {
+        console.log(
+          `[do] recordHistory start role=${role} len=${content.length} agentId=${this.agentId ?? "unknown"}`,
+        );
+      }
       await this.ensureMessagesTable();
       const sql = this.ctx.storage.sql;
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
       await sql.exec("INSERT INTO messages (id, role, content, created_at) VALUES (?, ?, ?, ?)", id, role, content, now);
-      console.log(`[do] recordHistory success role=${role} len=${content.length}`);
+      console.log(`[do] recordHistory success role=${role} len=${content.length} agentId=${this.agentId ?? "unknown"}`);
     } catch (err) {
-      console.error(`[do] recordHistory error:`, err);
+      console.error(
+        `[do] recordHistory error role=${role} len=${content.length} agentId=${this.agentId ?? "unknown"}`,
+        err,
+      );
     }
   }
 
