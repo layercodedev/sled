@@ -74,7 +74,7 @@ export const AppShell = ({ agents, currentAgentId, runningAgentIds, voiceWorkerB
               const isActive = a.id === currentAgentId;
               const isRunning = runningAgentIds.has(a.id);
               // Display title (auto-generated) > name (user-provided) > "New session" (fallback)
-              const displayName = a.title && a.title.length > 0 ? a.title : a.name ?? "New session";
+              const displayName = a.title && a.title.length > 0 ? a.title : (a.name ?? "New session");
               // Build state classes for initial render
               const stateClasses = ["sidebar-agent-item__state", isRunning ? "sidebar-agent-item__state--running" : ""]
                 .filter(Boolean)
@@ -511,6 +511,7 @@ export function SettingsPage(hasGoogleKey: boolean, hasAnthropicKey: boolean, me
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
         <title>Settings · Coder</title>
+        <link rel="icon" type="image/svg+xml" href="/img/favicon.png" />
         <link rel="stylesheet" href="/css/normalize.css" />
         <link rel="stylesheet" href="/css/milligram.css" />
         <link rel="stylesheet" href="/css/blue-retro.css" />
