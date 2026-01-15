@@ -1,0 +1,297 @@
+/*--------------------------------------------------------------
+  Elegant Minimal Theme
+  Author: Damien Tanner
+  Description: A refined, minimalist aesthetic
+  Compatible with: milligram.css v1.4+
+--------------------------------------------------------------*/
+
+/* ---------- Root Theme Variables ---------- */
+:root {
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --border: #e4e4e7;
+  --muted: #fafafa;
+  --muted-foreground: #71717a;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --ring: #a1a1aa;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius: 0.5rem;
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* ---------- Global Overrides ---------- */
+html,
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  border-radius: var(--radius);
+  text-transform: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--foreground);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+a:hover {
+  color: var(--accent-foreground);
+}
+
+/* ---------- Cards / Panels ---------- */
+.card,
+fieldset,
+section {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: none;
+  padding: 1.5rem;
+  border-radius: var(--radius);
+}
+
+form {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ---------- Buttons ---------- */
+button,
+.button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+  background-color: var(--primary);
+  border: 1px solid var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius);
+  box-shadow: none;
+  text-transform: none;
+  font-weight: 500;
+  font-size: 1rem;
+  padding: 0.5rem 1.125rem;
+  height: 2.5rem;
+  line-height: 1;
+  letter-spacing: normal;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+button:hover,
+.button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover {
+  background-color: #27272a;
+  border-color: #27272a;
+  color: var(--primary-foreground);
+  transform: none;
+}
+
+button:active,
+.button:active {
+  background-color: #3f3f46;
+  color: white;
+}
+
+/* Outline / Secondary Buttons */
+.button.button-outline,
+button.button-outline,
+input[type="button"].button-outline,
+input[type="reset"].button-outline,
+input[type="submit"].button-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+.button.button-outline:hover,
+button.button-outline:hover,
+input[type="button"].button-outline:hover,
+input[type="reset"].button-outline:hover,
+input[type="submit"].button-outline:hover {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.button[disabled],
+button[disabled],
+input[type="button"][disabled],
+input[type="reset"][disabled],
+input[type="submit"][disabled] {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.button[disabled]:focus,
+.button[disabled]:hover,
+button[disabled]:focus,
+button[disabled]:hover,
+input[type="button"][disabled]:focus,
+input[type="button"][disabled]:hover,
+input[type="reset"][disabled]:focus,
+input[type="reset"][disabled]:hover,
+input[type="submit"][disabled]:focus,
+input[type="submit"][disabled]:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.button.button-outline[disabled]:focus,
+.button.button-outline[disabled]:hover,
+button.button-outline[disabled]:focus,
+button.button-outline[disabled]:hover,
+input[type="button"].button-outline[disabled]:focus,
+input[type="button"].button-outline[disabled]:hover,
+input[type="reset"].button-outline[disabled]:focus,
+input[type="reset"].button-outline[disabled]:hover,
+input[type="submit"].button-outline[disabled]:focus,
+input[type="submit"].button-outline[disabled]:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.button.button-clear,
+button.button-clear,
+input[type="button"].button-clear,
+input[type="reset"].button-clear,
+input[type="submit"].button-clear {
+  background: transparent;
+  border-color: transparent;
+  color: var(--primary);
+}
+
+.button.button-clear[disabled]:focus,
+.button.button-clear[disabled]:hover,
+button.button-clear[disabled]:focus,
+button.button-clear[disabled]:hover,
+input[type="button"].button-clear[disabled]:focus,
+input[type="button"].button-clear[disabled]:hover,
+input[type="reset"].button-clear[disabled]:focus,
+input[type="reset"].button-clear[disabled]:hover,
+input[type="submit"].button-clear[disabled]:focus,
+input[type="submit"].button-clear[disabled]:hover {
+  color: var(--primary);
+}
+
+/* ---------- Inputs & Forms ---------- */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  border: 1px solid var(--border);
+  background-color: var(--card);
+  color: var(--foreground);
+  border-radius: var(--radius);
+  box-shadow: none;
+  font-size: 1rem;
+  padding: 0.5rem 0.875rem;
+  height: 2.5rem;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+textarea {
+  height: auto;
+  min-height: 5rem;
+}
+
+select {
+  padding-right: 2.5rem;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus,
+select:focus {
+  border-color: var(--foreground);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--foreground);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted-foreground);
+}
+
+
+/* ---------- Tables ---------- */
+table {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+th,
+td {
+  border-color: var(--border);
+}
+thead {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+/* ---------- Utility Styles ---------- */
+pre {
+  border-left: 0.3rem solid var(--primary);
+}
+
+.shadow {
+  box-shadow: var(--shadow);
+}
+.text-accent {
+  color: var(--accent-foreground);
+}
+.bg-muted {
+  background: var(--muted);
+}
+.border {
+  border: 1px solid var(--border);
+}
+
+/* ---------- Animations ---------- */
+button,
+.card,
+input,
+textarea {
+  transition: all 0.2s ease-in-out;
+}
+
+/* ---------- Dark Mode Overrides ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --card: #18181b;
+    --card-foreground: #fafafa;
+    --primary: #fafafa;
+    --primary-foreground: #18181b;
+    --border: #27272a;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+    --accent: #27272a;
+    --accent-foreground: #fafafa;
+    --ring: #52525b;
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  }
+}

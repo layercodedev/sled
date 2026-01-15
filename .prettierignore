@@ -1,0 +1,13 @@
+node_modules
+external_repos
+**/dist
+**/build
+**/.wrangler
+app/public
+*.min.js
+pnpm-lock.yaml
+# Auto-generated Cloudflare worker types
+worker-configuration.d.ts
+
+# Symlinks and markdown
+*.md

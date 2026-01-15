@@ -1,0 +1,26 @@
+{
+  "name": "voice-code-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "pnpm --parallel --filter ./app --filter ./server-client run start",
+    "lint": "eslint \"{app,server-client,voice}/**/*.{js,jsx,ts,tsx}\"",
+    "lint:fix": "eslint --fix \"{app,server-client,voice}/**/*.{js,jsx,ts,tsx}\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm --filter ./app exec tsc --noEmit && pnpm --filter ./server-client exec tsc --noEmit && pnpm --filter ./voice exec tsc --noEmit",
+    "knip": "pnpm -w --filter ./app knip && pnpm -w --filter ./server-client knip && pnpm -w --filter ./voice knip",
+    "jscpd": "pnpm -w --filter ./app jscpd && pnpm -w --filter ./server-client jscpd && pnpm -w --filter ./voice jscpd",
+    "check": "sh -c 'EXIT=0; pnpm typecheck || EXIT=1; pnpm lint || EXIT=1; pnpm format:check || EXIT=1; pnpm knip || EXIT=1; pnpm jscpd || EXIT=1; exit $EXIT'"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "eslint": "^9.12.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3",
+    "typescript-eslint": "^8.12.2",
+    "jscpd": "^4.0.5"
+  },
+  "packageManager": "pnpm@10.15.1"
+}

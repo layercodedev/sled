@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/acp-ws-proxy.ts",
+    "src/local-agent-manager.ts",
+    "src/mock-acp-agent.ts",
+    "example-scripts/client-gemni-example.ts",
+    "test-harness/mock-agent.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "example-scripts/**/*.{ts,tsx}", "test-harness/**/*.{ts,tsx}"]
+}

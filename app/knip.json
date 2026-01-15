@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/{index,cli,main}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "public/js/**/*.{js,mjs,cjs,jsx}"],
+  "project": ["**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}"],
+  "ignoreDependencies": ["cloudflare"],
+  "ignoreUnresolved": ["./analysis/audio_analysis.js", "./wav_packer.js"],
+  "ignore": ["src/types.d.ts"]
+}

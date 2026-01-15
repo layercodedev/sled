@@ -1,0 +1,9 @@
+{
+  "threshold": 2,
+  "reporters": ["console"],
+  "format": ["typescript", "javascript"],
+  "max-size": "512kb",
+  "gitignore": true,
+  "ignore": ["**/dist/**", "**/build/**"],
+  "pattern": ["src/**/*.{ts,tsx,js,jsx}", "example-scripts/**/*.{ts,tsx,js,jsx}", "test-harness/**/*.{ts,tsx,js,jsx}"]
+}

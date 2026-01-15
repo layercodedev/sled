@@ -1,0 +1,27 @@
+{
+  "name": "my-app",
+  "type": "module",
+  "scripts": {
+    "start": "wrangler dev --persist-to .wrangler/state",
+    "dev": "wrangler dev --persist-to .wrangler/state",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "test:app": "WRANGLER_LOG_PATH=.wrangler/logs/wrangler.log pnpm exec vitest run",
+    "test": "pnpm run test:app",
+    "knip": "knip",
+    "jscpd": "jscpd"
+  },
+  "dependencies": {
+    "hono": "^4.9.8",
+    "marked": "^17.0.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.9.12",
+    "@types/node": "^24.10.0",
+    "jscpd": "^4.0.5",
+    "knip": "^5.67.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0",
+    "wrangler": "^4.45.3"
+  }
+}

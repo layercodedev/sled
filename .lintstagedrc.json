@@ -1,0 +1,8 @@
+{
+  "{app,server-client}/**/*.{js,jsx,ts,tsx}": ["eslint --fix --max-warnings=0", "prettier --write"],
+  "**/*.{css,md,json,yml,yaml}": ["prettier --write"],
+  "*.{js,jsx,ts,tsx,css,md,json,yml,yaml}": [
+    "sh -c 'pnpm -w --filter ./app knip && pnpm -w --filter ./server-client knip'",
+    "sh -c 'pnpm -w --filter ./app jscpd && pnpm -w --filter ./server-client jscpd'"
+  ]
+}

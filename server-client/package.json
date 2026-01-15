@@ -1,0 +1,27 @@
+{
+  "name": "server-client",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "tsx src/local-agent-manager.ts",
+    "start:proxy": "tsx src/acp-ws-proxy.ts",
+    "knip": "knip",
+    "jscpd": "jscpd",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.15.1",
+  "dependencies": {
+    "@zed-industries/agent-client-protocol": "^0.4.5",
+    "tsx": "^4.20.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "jscpd": "^4.0.5",
+    "knip": "^5.67.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.0"
+  }
+}

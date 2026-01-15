@@ -1,0 +1,9 @@
+{
+  "threshold": 2,
+  "reporters": ["console"],
+  "format": ["tsx", "typescript", "jsx", "javascript", "markup", "css"],
+  "max-size": "512kb",
+  "gitignore": true,
+  "ignore": ["public/**", "**/*.min.js", "**/dist/**", "**/build/**", "**/.wrangler/**"],
+  "pattern": ["src/**/*.{ts,tsx,js,jsx}", "tests/**/*.{ts,tsx,js,jsx}"]
+}
