@@ -57,21 +57,6 @@ main.container.player-view {
   justify-content: center;
 }
 
-.agent-status--running {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.agent-status--stopped {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.agent-status--unknown {
-  background: #f4f4f5;
-  color: #71717a;
-}
-
 .agent-status--yolo {
   background: #fef3c7;
   color: #92400e;
@@ -1112,7 +1097,8 @@ player-title,
   z-index: 20;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 0.75rem;
   padding: 1rem 1.5rem;
   background-color: var(--muted);
   border: none;
@@ -1123,11 +1109,21 @@ player-title,
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  min-width: 0;
 }
 
 .chat-app__title {
   font-size: 1.125rem;
   font-weight: 600;
+}
+
+.chat-app__dir {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  max-width: min(32rem, 45vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-app__meta {
@@ -1141,6 +1137,13 @@ player-title,
 .chat-app__status {
   display: flex;
   align-items: center;
+  margin-left: auto;
+}
+
+.chat-app__icon-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
 }
 
 .chat-app__select {
@@ -1158,12 +1161,12 @@ player-title,
 }
 
 #chat-voice-select {
-  width: 15rem;
+  width: 8rem;
   max-width: 100%;
 }
 
 #permission-mode {
-  width: 10rem;
+  width: 8rem;
   max-width: 100%;
 }
 
@@ -1184,15 +1187,38 @@ player-title,
 
 /* End session button */
 .chat-end-session-btn {
-  background: var(--card);
-  color: var(--foreground);
-  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  margin-bottom: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
 }
 
 .chat-end-session-btn:hover:not(:disabled) {
-  background: var(--card);
-  color: var(--foreground);
-  border-color: var(--border);
+  background: transparent;
+  color: #000000;
+}
+
+.chat-end-session-btn:active:not(:disabled) {
+  background: transparent;
+  color: #000000;
+}
+
+.chat-end-session-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.chat-end-session-btn .icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .chat-status {
@@ -1244,17 +1270,27 @@ player-title,
   height: 2rem;
   padding: 0;
   margin-bottom: 0;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--card);
+  border: none;
+  background: transparent;
   color: var(--muted-foreground);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .chat-info-tooltip__trigger:hover {
-  background: var(--muted);
-  color: var(--foreground);
+  background: transparent;
+  color: #000000;
+}
+
+.chat-info-tooltip__trigger:active {
+  background: transparent;
+  color: #000000;
+}
+
+.chat-info-tooltip__trigger:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 999px;
 }
 
 .chat-info-tooltip__trigger .icon {
@@ -2052,12 +2088,16 @@ player-title,
   white-space: nowrap !important;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
   .chat-app__header {
     padding: 1.25rem 1.5rem;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  .chat-app__dir {
+    max-width: 100%;
   }
 
   .chat-app__messages {
@@ -2699,42 +2739,7 @@ player-title,
   min-height: 100%;
 }
 
-/* Show sidebar toggle in main when sidebar is collapsed */
-.app-main__sidebar-toggle {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  z-index: 30;
-  all: unset;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.5rem;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--muted-foreground);
-  box-shadow: var(--shadow);
-  transition: all 0.15s ease;
-}
-
-.app-main__sidebar-toggle:hover {
-  background: var(--muted);
-  color: var(--foreground);
-}
-
-.app-main__sidebar-toggle .icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.app-shell.sidebar-collapsed .app-main__sidebar-toggle {
-  display: flex;
-}
-
-/* Mobile back button in chat header */
+/* Back button in chat header */
 .chat-back-btn {
   all: unset;
   display: none;
@@ -2747,6 +2752,7 @@ player-title,
   color: var(--muted-foreground);
   margin-right: 0.5rem;
   flex-shrink: 0;
+  align-self: flex-start;
   transition: all 0.15s ease;
 }
 
@@ -2758,6 +2764,19 @@ player-title,
 .chat-back-btn .icon {
   width: 1.25rem;
   height: 1.25rem;
+}
+
+@media (min-width: 769px) {
+  .chat-back-btn {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 0.25rem;
+  }
+}
+
+/* Show back button when sidebar is collapsed on desktop */
+.app-shell.sidebar-collapsed .chat-back-btn {
+  display: flex;
 }
 
 /* Empty state when no agent selected */
@@ -2895,7 +2914,8 @@ player-title,
 
 .new-agent-form {
   width: 100%;
-  max-width: 40rem;
+  max-width: 43rem;
+  margin-top: 5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -3029,10 +3049,6 @@ player-title,
     bottom: 0;
   }
 
-  .app-main__sidebar-toggle {
-    display: none !important;
-  }
-
   .chat-back-btn {
     display: flex;
   }
@@ -3062,8 +3078,23 @@ player-title,
   .chat-app__status {
     width: 100%;
     justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    flex-wrap: nowrap;
+    gap: 0.2rem;
+  }
+
+  .chat-app__status > :not(.chat-app__icon-group) {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .chat-app__icon-group {
+    flex: 0 0 auto;
+  }
+
+  .chat-app__icon-group > * {
+    flex: 0 0 auto;
+    min-width: 2rem;
+    flex-shrink: 0;
   }
 
   .chat-app__select {
@@ -3071,15 +3102,27 @@ player-title,
     padding: 0.25rem 0.5rem;
     padding-right: 1.75rem;
     height: 1.75rem;
-    min-width: 8rem;
+    min-width: 0;
     background-position: right 0.3rem center;
     background-size: 0.9rem auto;
+  }
+
+  #chat-voice-select,
+  #permission-mode {
+    width: auto;
   }
 
   .chat-app__header .button {
     font-size: 0.75rem;
     padding: 0 0.5rem;
     height: 1.75rem;
+  }
+
+  .chat-app__status .button {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .chat-status {
@@ -3307,7 +3350,7 @@ player-title,
 /* Small mobile (iPhone SE etc) */
 @media (max-width: 375px) {
   .chat-app__status {
-    gap: 0.375rem;
+    gap: 0.2rem;
   }
 
   .chat-app__select {

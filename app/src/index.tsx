@@ -382,8 +382,6 @@ app.get("/agents/:agentId/chat", async (c) => {
     c.env,
     agents.map((a) => a.id),
   );
-  const isRunning = runningAgentIds.has(agentId);
-
   return c.render(
     <AppShell agents={agents} currentAgentId={agentId} runningAgentIds={runningAgentIds} voiceWorkerBaseUrl={getVoiceWorkerBaseUrl(c.env)}>
       <AgentChatPage
@@ -392,10 +390,10 @@ app.get("/agents/:agentId/chat", async (c) => {
         title={agent?.title ?? null}
         yolo={yolo}
         voice={agentVoice}
+        workdir={agent?.workdir ?? null}
         wsPath={wsPath}
         voiceWsUrl={voiceWsUrl}
         debug={isDebug}
-        isRunning={isRunning}
       />
     </AppShell>,
   );
@@ -414,24 +412,6 @@ app.get("/agents/:agentId/chat/content", async (c) => {
   // Build voice ws URL (external voice worker if configured, else null for fallback)
   const voiceWsUrl = buildVoiceWsUrl(c.env, agentVoice);
 
-  // Fetch agent running status from local agent manager
-  let isRunning = false;
-  try {
-    const agentManagerUrl = getLocalAgentManagerUrl(c.env);
-    const statusResponse = await fetch(`${agentManagerUrl}/agents/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ agentIds: [agentId] }),
-    });
-    if (statusResponse.ok) {
-      const statusData = (await statusResponse.json()) as AgentStatusResponse;
-      const agentStatus = statusData.agents.find((a) => a.agentId === agentId);
-      isRunning = agentStatus?.running ?? false;
-    }
-  } catch {
-    // Failed to fetch status, default to not running
-  }
-
   // Return content with OOB swap for sidebar active state
   return c.html(
     <>
@@ -441,10 +421,10 @@ app.get("/agents/:agentId/chat/content", async (c) => {
         title={agent?.title ?? null}
         yolo={yolo}
         voice={agentVoice}
+        workdir={agent?.workdir ?? null}
         wsPath={wsPath}
         voiceWsUrl={voiceWsUrl}
         debug={isDebug}
-        isRunning={isRunning}
       />
       <SidebarActiveStateOOB currentAgentId={agentId} />
     </>,

@@ -300,6 +300,19 @@
     }
 
     var placeholder = document.getElementById("agent-ready-placeholder");
+    var list = document.getElementById("chat-message-list");
+    if (!list) {
+      console.warn("[chat] chat-message-list not found");
+      return;
+    }
+
+    if (list.dataset.historyAgent === resolvedAgentId) {
+      if (list.dataset.historyLoaded === "true" || list.dataset.historyLoading === "true") {
+        return;
+      }
+    }
+    list.dataset.historyAgent = resolvedAgentId;
+    list.dataset.historyLoading = "true";
 
     var historyUrl = "/agents/" + resolvedAgentId + "/history";
     console.log("[chat] Fetching history from: " + historyUrl);
@@ -317,6 +330,8 @@
         var messages = data.messages || [];
         if (messages.length === 0) {
           console.log("[chat] No history found");
+          list.dataset.historyLoading = "false";
+          list.dataset.historyLoaded = "true";
           return;
         }
 
@@ -328,9 +343,7 @@
           }
         }
 
-        var list = document.getElementById("chat-message-list");
-        if (!list) {
-          console.warn("[chat] chat-message-list not found");
+        if (!list.isConnected || list.dataset.historyAgent !== resolvedAgentId) {
           return;
         }
 
@@ -352,11 +365,16 @@
           list.appendChild(fragment);
         }
 
+        list.dataset.historyLoading = "false";
+        list.dataset.historyLoaded = "true";
         _historyLoaded = true;
         console.log("[chat] Loaded " + messages.length + " history messages");
       })
       .catch(function (err) {
         console.error("[chat] Error loading history:", err);
+        if (list && list.isConnected && list.dataset.historyAgent === resolvedAgentId) {
+          list.dataset.historyLoading = "false";
+        }
         // Don't show error to user, just continue with fresh session
       });
   }
@@ -749,8 +767,6 @@
     var appShell = document.getElementById("app-shell");
     var sidebar = document.getElementById("app-sidebar");
     var sidebarToggle = document.getElementById("sidebar-toggle");
-    var mainSidebarToggle = document.getElementById("main-sidebar-toggle");
-    var chatBackBtn = document.getElementById("chat-back-btn");
 
     if (!appShell || !sidebar) return;
 
@@ -820,23 +836,22 @@
       });
     }
 
-    // Main area sidebar toggle (appears when sidebar is collapsed)
-    if (mainSidebarToggle) {
-      mainSidebarToggle.addEventListener("click", function () {
-        if (!isMobile()) {
-          toggleSidebarDesktop();
-        }
-      });
-    }
-
-    // Mobile back button
-    if (chatBackBtn) {
-      chatBackBtn.addEventListener("click", function () {
-        if (isMobile()) {
-          showSidebarMobile();
-        }
-      });
-    }
+    // Back button (delegated for HTMX swaps)
+    document.addEventListener("click", function (e) {
+      var target = e.target;
+      var btn = null;
+      if (target && target.id === "chat-back-btn") {
+        btn = target;
+      } else if (target && typeof target.closest === "function") {
+        btn = target.closest("#chat-back-btn");
+      }
+      if (!btn) return;
+      if (isMobile()) {
+        showSidebarMobile();
+      } else {
+        toggleSidebarDesktop();
+      }
+    });
 
     // Handle resize - adjust visibility
     var resizeTimeout;
@@ -960,7 +975,6 @@
 
     btn.addEventListener("click", function () {
       btn.disabled = true;
-      btn.textContent = "Ending...";
 
       fetch("/api/agents/" + encodeURIComponent(agentId) + "/stop", {
         method: "POST",
@@ -979,7 +993,6 @@
         .catch(function (err) {
           console.error("[chat] Error stopping agent:", err);
           btn.disabled = false;
-          btn.textContent = "End Session";
           alert("Failed to stop agent. Please try again.");
         });
     });

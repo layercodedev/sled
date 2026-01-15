@@ -130,20 +130,6 @@ export const AppShell = ({ agents, currentAgentId, runningAgentIds, voiceWorkerB
 
       {/* Main content area */}
       <div class="app-main" id="app-main">
-        <button type="button" class="app-main__sidebar-toggle" id="main-sidebar-toggle" title="Show sidebar" aria-label="Show sidebar">
-          <svg
-            class="icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M13 17l5-5-5-5"></path>
-            <path d="M6 17l5-5-5-5"></path>
-          </svg>
-        </button>
         {children}
       </div>
       {/* Hidden marker element for HTMX navigation state - used by chat.js */}
@@ -271,26 +257,17 @@ type AgentChatPageProps = {
   title: string | null;
   yolo: boolean;
   voice: Voice | null;
+  workdir: string | null;
   wsPath: string;
   voiceWsUrl: string;
   debug?: boolean;
-  isRunning?: boolean;
 };
 
-export const AgentChatPage = ({
-  agentId,
-  agentType,
-  title,
-  yolo,
-  voice,
-  wsPath,
-  voiceWsUrl,
-  debug,
-  isRunning = false,
-}: AgentChatPageProps) => {
+export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir, wsPath, voiceWsUrl, debug }: AgentChatPageProps) => {
   const cid = crypto.randomUUID();
-  const typeLabel = agentType === "claude" ? "Claude Code" : "Gemini CLI";
+  const typeLabel = agentType === "claude" ? "Claude" : "Gemini";
   const displayTitle = title || "New session";
+  const workdirLabel = workdir ? workdir : null;
 
   return (
     <main class="chat-app" ws-connect={`${wsPath}?cid=${cid}`} ws-max-retries="3" data-voice-ws={voiceWsUrl}>
@@ -313,19 +290,21 @@ export const AgentChatPage = ({
         </button>
         <div class="chat-app__brand">
           <span class="chat-app__title">{displayTitle}</span>
-          <span class="chat-app__meta">
+          {workdirLabel ? (
+            <span class="chat-app__dir" title={workdirLabel}>
+              {workdirLabel}
+            </span>
+          ) : null}
+          {/*<span class="chat-app__meta">
             <span class={`agent-type-badge ${agentType === "claude" ? "agent-type-badge--claude" : "agent-type-badge--gemini"}`}>
               {typeLabel}
             </span>
-            <span
-              id={`chat-header-status-${agentId}`}
-              class={`agent-status ${isRunning ? "agent-status--running" : "agent-status--stopped"}`}
-            >
-              {isRunning ? "Running" : "Stopped"}
-            </span>
-          </span>
+          </span>*/}
         </div>
         <div class="chat-app__status" style="display:flex; align-items:center; gap:0.75rem;">
+          <span class={`agent-type-badge ${agentType === "claude" ? "agent-type-badge--claude" : "agent-type-badge--gemini"}`}>
+            {typeLabel}
+          </span>
           {agentType === "claude" && (
             <select id="permission-mode" class="chat-app__select">
               <option value="default">Default Permissions</option>
@@ -341,53 +320,68 @@ export const AgentChatPage = ({
               {voice || DEFAULT_VOICE}
             </option>
           </select>
-          <div class="chat-info-tooltip">
-            <button type="button" class="chat-info-tooltip__trigger" aria-label="Connection info">
+          <button type="button" id="ws-reconnect-btn" class="button chat-reconnect-btn is-hidden" title="Reconnect to agent">
+            Reconnect
+          </button>
+          <div class="chat-app__icon-group">
+            <div class="chat-info-tooltip">
+              <button type="button" class="chat-info-tooltip__trigger" aria-label="Connection info">
+                <svg
+                  class="icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 16v-4"></path>
+                  <path d="M12 8h.01"></path>
+                </svg>
+              </button>
+              <div class="chat-info-tooltip__content">
+                <div class="chat-info-tooltip__row">
+                  <span class="chat-info-tooltip__label">Agent ID:</span>
+                  <span class="chat-info-tooltip__value">{agentId}</span>
+                </div>
+                <div class="chat-info-tooltip__row">
+                  <span class="chat-info-tooltip__label">Server connection:</span>
+                  <span id="connection-status" class="chat-status chat-status--info">
+                    Connecting…
+                  </span>
+                </div>
+                {yolo && (
+                  <div class="chat-info-tooltip__row">
+                    <span class="chat-info-tooltip__label">Permission mode:</span>
+                    <span class="agent-status agent-status--yolo">YOLO</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              id="end-session-btn"
+              class="chat-end-session-btn"
+              data-agent-id={agentId}
+              title="End session and stop the agent"
+              aria-label="End session"
+            >
               <svg
-                class="icon"
+                class="icon icon--close"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M12 16v-4"></path>
-                <path d="M12 8h.01"></path>
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
-            <div class="chat-info-tooltip__content">
-              <div class="chat-info-tooltip__row">
-                <span class="chat-info-tooltip__label">Agent ID:</span>
-                <span class="chat-info-tooltip__value">{agentId}</span>
-              </div>
-              <div class="chat-info-tooltip__row">
-                <span class="chat-info-tooltip__label">Server connection:</span>
-                <span id="connection-status" class="chat-status chat-status--info">
-                  Connecting…
-                </span>
-              </div>
-              {yolo && (
-                <div class="chat-info-tooltip__row">
-                  <span class="chat-info-tooltip__label">Permission mode:</span>
-                  <span class="agent-status agent-status--yolo">YOLO</span>
-                </div>
-              )}
-            </div>
           </div>
-          <button type="button" id="ws-reconnect-btn" class="button chat-reconnect-btn is-hidden" title="Reconnect to agent">
-            Reconnect
-          </button>
-          <button
-            type="button"
-            id="end-session-btn"
-            class="button chat-end-session-btn"
-            data-agent-id={agentId}
-            title="End session and stop the agent"
-          >
-            End Session
-          </button>
         </div>
       </header>
 

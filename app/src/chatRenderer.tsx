@@ -45,7 +45,7 @@ function renderAgentSegment(segment: string): string {
     const pretty = JSON.stringify(parsed, null, 2);
 
     return renderToString(
-      <div id="message-list" hx-swap-oob="beforeend">
+      <div id="chat-message-list" hx-swap-oob="beforeend">
         <article class="agent-message-card">
           <div class="agent-message-header">
             <span>{timestamp}</span>
@@ -57,7 +57,7 @@ function renderAgentSegment(segment: string): string {
     );
   } catch {
     return renderToString(
-      <div id="message-list" hx-swap-oob="beforeend">
+      <div id="chat-message-list" hx-swap-oob="beforeend">
         <article class="agent-message-card agent-message-card--error">
           <div class="agent-message-header">
             <span>{timestamp}</span>
@@ -75,7 +75,7 @@ export function renderClientEventSnippet(title: string, details?: string): strin
   const timestamp = formatTimestamp(new Date());
 
   return renderToString(
-    <div id="message-list" hx-swap-oob="beforeend">
+    <div id="chat-message-list" hx-swap-oob="beforeend">
       <article class="agent-message-card">
         <div class="agent-message-header">
           <span>{timestamp}</span>
