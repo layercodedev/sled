@@ -1425,7 +1425,7 @@ player-title,
   display: flex;
   flex-direction: column;
   max-width: min(42rem, 100%);
-  padding-top: 1rem;
+  padding-top: 0.5rem;
 }
 
 .chat-message__bubble {
@@ -1505,9 +1505,12 @@ player-title,
   display: flex;
   justify-content: flex-end;
   gap: 0.25rem;
-  margin-top: 0.25rem;
+  margin-top: 0.1rem;
+  margin-bottom: -0.4rem;
   opacity: 0;
   transition: opacity 0.15s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .chat-message:hover .chat-message__actions,
@@ -1526,7 +1529,7 @@ player-title,
   align-items: center;
   justify-content: center;
   width: 1.75rem;
-  height: 1.75rem;
+  height: 1rem;
   padding: 0;
   cursor: pointer;
   border-radius: 0.375rem;
@@ -2256,7 +2259,13 @@ player-title,
 }
 
 .chat-tool-header__chevron {
-  font-size: 1.5rem;
+  font-size: 0.85rem;
+  line-height: 1;
+  width: 0.85rem;
+  height: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--muted-foreground);
   transition: opacity 0.15s ease, transform 0.2s ease;
   flex-shrink: 0;
