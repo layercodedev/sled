@@ -2934,6 +2934,17 @@ player-title,
   width: 10rem;
 }
 
+#agent-voice {
+  width: 12rem;
+  max-width: 100%;
+  padding-right: 1.75rem;
+  background-position: right 0.35rem center;
+  background-size: 1rem auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .new-agent-form__yolo-toggle {
   display: flex;
   align-items: center;
@@ -3175,6 +3186,10 @@ player-title,
 
   .new-agent-form__option-select,
   .new-agent-form__option-input {
+    width: 100%;
+  }
+
+  #agent-voice {
     width: 100%;
   }
 

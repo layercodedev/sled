@@ -118,6 +118,8 @@
   function setupNewAgentWorkdir() {
     var input = document.getElementById("agent-workdir");
     if (!input) return;
+    if (input.dataset.workdirPersisted === "true") return;
+    input.dataset.workdirPersisted = "true";
 
     var stored = null;
     try {
@@ -1222,9 +1224,6 @@
       syncSidebarActiveState(navState.currentAgentId, navState.isIndexPage);
 
       restoreSidebarScroll();
-
-      // Reinitialize main content with the agent ID from the marker
-      initMainContent(navState.currentAgentId || undefined);
     });
 
     document.body.addEventListener("htmx:afterSwap", function (e) {
@@ -1232,6 +1231,7 @@
       if (!target || target.id !== "app-main") return;
       var navState = resolveNavState(document.getElementById("htmx-nav-marker"));
       syncSidebarActiveState(navState.currentAgentId, navState.isIndexPage);
+      initMainContent(navState.currentAgentId || undefined);
     });
 
     window.addEventListener("popstate", function () {

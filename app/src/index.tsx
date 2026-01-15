@@ -196,6 +196,9 @@ app.post("/api/agents/:agentId/stop", async (c) => {
 
   const response = await fetch(stopUrl, { method: "POST" });
   if (!response.ok) {
+    if (response.status === 404) {
+      return c.json({ agentId, stopped: true, alreadyStopped: true });
+    }
     const errorText = await response.text();
     return c.json({ error: "Failed to stop agent", details: errorText }, response.status as 400 | 404 | 500);
   }

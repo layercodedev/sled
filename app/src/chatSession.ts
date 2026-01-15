@@ -93,6 +93,8 @@ export class ChatSession {
   private readonly promptStates: PromptState[] = [];
   private currentToolCallTitle: string | null = null;
   private cancelInFlight = false;
+  private orphanMessageId: string | null = null;
+  private orphanMessageContent = "";
 
   constructor(options: ChatSessionOptions) {
     this.pushSnippet = options.pushSnippet;
@@ -239,6 +241,7 @@ export class ChatSession {
     }
 
     this.cancelInFlight = false;
+    this.clearOrphanAgentMessage();
 
     const userMessageId = `user-${this.createId()}`;
     this.pushSnippet(renderChatUserMessageSnippet(trimmed, userMessageId));
@@ -285,10 +288,11 @@ export class ChatSession {
       return;
     }
 
-    const state = this.getActivePromptState();
-    if (!state && this.cancelInFlight) {
+    const activeState = this.getActivePromptState();
+    if (!activeState && this.cancelInFlight) {
       return;
     }
+    const state = activeState ?? this.getMostRecentPromptState();
     if (state?.cancelled) {
       return;
     }
@@ -318,10 +322,11 @@ export class ChatSession {
     }
 
     if (!state) {
-      const fallbackId = `agent-${this.createId()}`;
-      this.pushSnippet(renderChatAgentMessageSnippet(addition, fallbackId));
+      this.appendOrphanAgentMessage(addition);
       return;
     }
+
+    this.clearOrphanAgentMessage();
 
     // Get or create current text segment
     if (!state.currentSegmentId) {
@@ -451,6 +456,28 @@ export class ChatSession {
       }
     }
     return undefined;
+  }
+
+  private getMostRecentPromptState(): PromptState | undefined {
+    if (this.promptStates.length === 0) {
+      return undefined;
+    }
+    return this.promptStates[this.promptStates.length - 1];
+  }
+
+  private appendOrphanAgentMessage(addition: string): void {
+    if (!this.orphanMessageId) {
+      this.orphanMessageId = `agent-${this.createId()}`;
+      this.orphanMessageContent = "";
+      this.pushSnippet(renderChatAgentMessageSnippet("…", this.orphanMessageId));
+    }
+    this.orphanMessageContent = appendSegment(this.orphanMessageContent, addition);
+    this.pushSnippet(renderChatAgentUpdateSnippet(this.orphanMessageContent, this.orphanMessageId));
+  }
+
+  private clearOrphanAgentMessage(): void {
+    this.orphanMessageId = null;
+    this.orphanMessageContent = "";
   }
 
   private findStateByAgentMessageId(agentMessageId: string): PromptState | undefined {
