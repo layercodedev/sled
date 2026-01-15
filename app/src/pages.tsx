@@ -73,8 +73,8 @@ export const AppShell = ({ agents, currentAgentId, runningAgentIds, voiceWorkerB
             {agents.map((a) => {
               const isActive = a.id === currentAgentId;
               const isRunning = runningAgentIds.has(a.id);
-              // Display title (auto-generated) > name (user-provided) > id (fallback)
-              const displayName = a.title ?? a.name ?? a.id;
+              // Display title (auto-generated) > name (user-provided) > "New session" (fallback)
+              const displayName = a.title && a.title.length > 0 ? a.title : a.name ?? "New session";
               // Build state classes for initial render
               const stateClasses = ["sidebar-agent-item__state", isRunning ? "sidebar-agent-item__state--running" : ""]
                 .filter(Boolean)

@@ -80,6 +80,6 @@ export function getVoiceWorkerBaseUrl(env: Bindings): string {
   return DEFAULT_VOICE_WORKER_URL;
 }
 
-export function buildVoiceWsUrl(env: Bindings, voice: string): string {
-  return `${getVoiceWorkerBaseUrl(env).replace(/^http/, "ws")}/ws?${new URLSearchParams({ voice }).toString()}`;
+export function buildVoiceWsUrl(env: Bindings, voice: string, agentId: string): string {
+  return `${getVoiceWorkerBaseUrl(env).replace(/^http/, "ws")}/ws?${new URLSearchParams({ voice, agentId }).toString()}`;
 }

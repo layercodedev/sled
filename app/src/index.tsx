@@ -22,7 +22,6 @@ import {
   setAgentTitle,
 } from "./db";
 import { debugEnabled, getLocalAgentManagerUrl, normalizeWorkdirInput, buildVoiceWsUrl, getVoiceWorkerBaseUrl } from "./utils";
-import { generateConversationTitle } from "./tts";
 import { AppShell, SidebarActiveStateOOB, NewAgentPage, AgentChatPage, TestAgentConsolePage, SettingsPage } from "./pages";
 import { renderSidebarAgentTitleSnippet } from "./chatUiRenderer";
 
@@ -207,8 +206,8 @@ app.post("/api/agents/:agentId/stop", async (c) => {
   return c.json(result);
 });
 
-// Generate and save conversation title from chat history
-app.post("/api/agents/:agentId/title/generate", async (c) => {
+// Save conversation title (called by voice-client when title is received from voice worker)
+app.post("/api/agents/:agentId/title", async (c) => {
   const agentId = c.req.param("agentId");
   const isDebug = debugEnabled(c.env);
 
@@ -219,50 +218,22 @@ app.post("/api/agents/:agentId/title/generate", async (c) => {
   // Skip if title already exists
   if (agent.title) {
     if (isDebug) console.log(`[title] agent=${agentId} already has title="${agent.title}"`);
-    return c.json({ title: agent.title, generated: false });
+    return c.json({ title: agent.title, saved: false, reason: "already_exists" });
   }
 
-  // Check for Google AI API key
-  const googleAiApiKey = c.env.GOOGLE_AI_API_KEY;
-  if (!googleAiApiKey) {
-    if (isDebug) console.log(`[title] agent=${agentId} skipping - no GOOGLE_AI_API_KEY`);
-    return c.json({ error: "GOOGLE_AI_API_KEY not configured" }, 400);
-  }
-
-  // Fetch messages from DO
-  const instance = getAgentSession(c.env, agentId);
-  const historyResp = await instance.fetch(new Request("https://agent/history"));
-  if (!historyResp.ok) {
-    return c.json({ error: "Failed to fetch history" }, 500);
-  }
-
-  const historyData = (await historyResp.json()) as {
-    messages?: Array<{ role: string; content: string }>;
-  };
-  const messages = historyData.messages ?? [];
-
-  // Need at least 2 messages (user + assistant) to generate a meaningful title
-  if (messages.length < 2) {
-    if (isDebug) console.log(`[title] agent=${agentId} skipping - only ${messages.length} messages`);
-    return c.json({ title: null, generated: false, reason: "not_enough_messages" });
-  }
-
-  // Generate title
-  const title = await generateConversationTitle({
-    messages,
-    apiKey: googleAiApiKey,
-    debug: isDebug,
-  });
-
+  // Get title from request body
+  const body = (await c.req.json()) as { title?: string };
+  const title = body.title?.trim();
   if (!title) {
-    return c.json({ title: null, generated: false, reason: "generation_failed" });
+    return c.json({ error: "title is required" }, 400);
   }
 
   // Save to database
   await setAgentTitle(c.env.DB, agentId, title);
-  if (isDebug) console.log(`[title] agent=${agentId} generated and saved title="${title}"`);
+  if (isDebug) console.log(`[title] agent=${agentId} saved title="${title}"`);
 
   // Broadcast title update to sidebar subscribers via DO
+  const instance = getAgentSession(c.env, agentId);
   const titleHtml = renderSidebarAgentTitleSnippet(agentId, title);
   const sidebarResp = await instance.fetch(
     new Request("https://agent/sidebar/broadcast", {
@@ -273,7 +244,7 @@ app.post("/api/agents/:agentId/title/generate", async (c) => {
   );
   if (isDebug) console.log(`[title] sidebar broadcast status=${sidebarResp.status}`);
 
-  return c.json({ title, generated: true });
+  return c.json({ title, saved: true });
 });
 
 // Test console routes (used by unit tests)
@@ -375,7 +346,7 @@ app.get("/agents/:agentId/chat", async (c) => {
   const agents = await listAgents(c.env.DB, user.id);
 
   // Build voice ws URL (external voice worker if configured, else null for fallback)
-  const voiceWsUrl = buildVoiceWsUrl(c.env, agentVoice);
+  const voiceWsUrl = buildVoiceWsUrl(c.env, agentVoice, agentId);
 
   // Fetch running status for all agents (for sidebar)
   const runningAgentIds = await fetchRunningAgentIds(
@@ -410,7 +381,7 @@ app.get("/agents/:agentId/chat/content", async (c) => {
   const isDebug = debugEnabled(c.env);
 
   // Build voice ws URL (external voice worker if configured, else null for fallback)
-  const voiceWsUrl = buildVoiceWsUrl(c.env, agentVoice);
+  const voiceWsUrl = buildVoiceWsUrl(c.env, agentVoice, agentId);
 
   // Return content with OOB swap for sidebar active state
   return c.html(

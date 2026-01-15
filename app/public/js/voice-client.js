@@ -910,6 +910,43 @@
       });
       return;
     }
+    // Handle session title updates from voice worker
+    if (t === "session.title" && typeof msg.title === "string" && typeof msg.agentId === "string") {
+      this._handleSessionTitle(msg.agentId, msg.title);
+      return;
+    }
+  };
+
+  VoiceClient.prototype._handleSessionTitle = function (agentId, title) {
+    if (vdebug()) console.log("[voice-client] session.title agentId=" + agentId + " title=" + title);
+
+    // Update sidebar title element if it exists
+    var titleEl = document.getElementById("sidebar-agent-title-" + agentId);
+    if (titleEl) {
+      titleEl.textContent = title;
+    }
+
+    // Update header title if we're on this agent's page
+    var headerTitle = document.querySelector(".chat-app__title");
+    if (headerTitle) {
+      var currentAgentId = null;
+      try {
+        var match = window.location.pathname.match(/\/agents\/([^/]+)/);
+        currentAgentId = match ? match[1] : null;
+      } catch (_) {}
+      if (currentAgentId === agentId) {
+        headerTitle.textContent = title;
+      }
+    }
+
+    // Save title to server
+    fetch("/api/agents/" + encodeURIComponent(agentId) + "/title", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: title }),
+    }).catch(function (err) {
+      if (vdebug()) console.error("[voice-client] failed to save title:", err);
+    });
   };
 
   VoiceClient.prototype._onWsClose = function (_ev, ws) {
