@@ -7,6 +7,7 @@
     "lint": "eslint \"{app,server-client,voice}/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint --fix \"{app,server-client,voice}/**/*.{js,jsx,ts,tsx}\"",
     "format": "prettier --write .",
+    "migrate": "sh ./app/scripts/run-migrations.sh local",
     "format:check": "prettier --check .",
     "typecheck": "pnpm --filter ./app exec tsc --noEmit && pnpm --filter ./server-client exec tsc --noEmit && pnpm --filter ./voice exec tsc --noEmit",
     "knip": "pnpm -w --filter ./app knip && pnpm -w --filter ./server-client knip && pnpm -w --filter ./voice knip",
