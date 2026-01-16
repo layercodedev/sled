@@ -3,7 +3,7 @@
 Use your desktop Claude Code, Codex or Gemini CLI coding agent from your phone. With voice.
 
 <p align="center">
-  <img src="mockup.gif" alt="Sled demo" width="400">
+  <img src="https://assets.layercode.com/mockup.gif" alt="Sled demo" width="400">
 </p>
 
 > **This is experimental software.** Like an actual sled: fast and fun, but if you're not careful, you can crash into a tree.
