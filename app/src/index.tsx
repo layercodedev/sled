@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { jsxRenderer } from "hono/jsx-renderer";
 
 // Re-export the Durable Object for Cloudflare Workers
-export { ClaudeContainer } from "./durableObject";
+export { SledAgent } from "./durableObject";
 
 // Internal imports
 import type { Bindings, AgentStatusResponse } from "./types";
@@ -36,7 +36,7 @@ function originMatchesHost(origin: string, requestUrl: string): boolean {
 }
 
 function getAgentSession(env: Bindings, agentId: string): DurableObjectStub {
-  return env.CLAUDE_CONTAINER.get(env.CLAUDE_CONTAINER.idFromName(agentId));
+  return env.SLED_AGENT.get(env.SLED_AGENT.idFromName(agentId));
 }
 
 async function fetchRunningAgentIds(env: Bindings, agentIds: string[]): Promise<Set<string>> {
@@ -97,7 +97,7 @@ const AgentsLayout = jsxRenderer(({ children }) => {
     <html>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>Coder by Layercode</title>
+        <title>Sled by Layercode</title>
         <script src="/js/htmx.min.js"></script>
         <script src="/js/htmx-ext-ws.min.js"></script>
         <script src="/js/wavtools.js"></script>

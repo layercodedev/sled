@@ -39,8 +39,10 @@ pnpm migrate
 You need a coding agent installed:
 
 ```bash
-# Claude Code (ACP version required)
+# Claude Code
 npm install -g @anthropic-ai/claude-code@latest
+# You also need Claude Code Agent Control Protocol adapter
+npm install -g @zed-industries/claude-code-acp
 
 # or Gemini CLI
 npm install -g @google/gemini-cli@latest

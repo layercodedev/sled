@@ -533,7 +533,7 @@ export function SettingsPage(hasGoogleKey: boolean, hasAnthropicKey: boolean, me
     <html>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        <title>Settings · Coder</title>
+        <title>Settings · Sled</title>
         <link rel="icon" type="image/svg+xml" href="/img/favicon.svg" />
         <link rel="stylesheet" href="/css/normalize.css" />
         <link rel="stylesheet" href="/css/milligram.css" />

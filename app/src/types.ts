@@ -84,7 +84,7 @@ export type AgentStatusResponse = {
 export type WebSocketResponse = Response & { webSocket?: WebSocket };
 
 export type Bindings = {
-  CLAUDE_CONTAINER: DurableObjectNamespace<import("./durableObject").ClaudeContainer>;
+  SLED_AGENT: DurableObjectNamespace<import("./durableObject").SledAgent>;
   LOCAL_AGENT_MANAGER_URL?: string;
   DEBUG_LOG?: string;
   DB: D1Database;

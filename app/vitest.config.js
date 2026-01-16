@@ -9,7 +9,7 @@ export default defineWorkersConfig({
         miniflare: {
           bindings: {
             LOCAL_AGENT_MANAGER_URL: "http://127.0.0.1:8788",
-            CLAUDE_CONTAINER: null,
+            SLED_AGENT: null,
           },
         },
       },

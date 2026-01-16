@@ -22,5 +22,5 @@ files=(
 )
 
 for file in "${files[@]}"; do
-  pnpm wrangler d1 execute coder --"$mode" --file="$file"
+  pnpm wrangler d1 execute sled --"$mode" --file="$file"
 done

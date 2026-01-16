@@ -1,4 +1,4 @@
-// ClaudeContainer Durable Object - handles chat WebSocket for a single agent
+// SledAgent Durable Object - handles chat WebSocket for a single agent
 
 import { ChatSession } from "./chatSession";
 import {
@@ -21,7 +21,7 @@ import {
   readStringField,
 } from "./utils";
 
-export class ClaudeContainer implements DurableObject {
+export class SledAgent implements DurableObject {
   declare readonly [Rpc.__DURABLE_OBJECT_BRAND]: never;
   private readonly ctx: DurableObjectState;
   private readonly env: Bindings;

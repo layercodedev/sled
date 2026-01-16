@@ -811,7 +811,9 @@ function extractContent(result: Record<string, unknown>): string {
     return message.trim();
   }
 
-  return stringify(result);
+  // Don't stringify the result as fallback - if there's no meaningful content,
+  // return empty string to avoid showing raw JSON like {"stopReason": "end_turn"}
+  return "";
 }
 
 function readTextBlock(block: Record<string, unknown>): string | null {

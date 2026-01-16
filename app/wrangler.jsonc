@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "coder",
+  "name": "sled",
   "main": "src/index.tsx",
   "compatibility_date": "2025-09-19",
   "observability": {
@@ -10,14 +10,14 @@
   "durable_objects": {
     "bindings": [
       {
-        "class_name": "ClaudeContainer",
-        "name": "CLAUDE_CONTAINER",
+        "class_name": "SledAgent",
+        "name": "SLED_AGENT",
       },
     ],
   },
   "migrations": [
     {
-      "new_sqlite_classes": ["ClaudeContainer"],
+      "new_sqlite_classes": ["SledAgent"],
       "tag": "v1",
     },
   ],
@@ -34,7 +34,7 @@
   // External voice worker URL for deployed environments
   // In local dev, override this in .dev.vars or leave unset to use built-in voice endpoint
   "vars": {
-    "DISABLE_VOICE_MODE": "false",
+    // "DISABLE_VOICE_MODE": "true",
   },
   // "compatibility_flags": [
   //   "nodejs_compat"
