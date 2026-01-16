@@ -40,6 +40,17 @@ export function renderChatStatusSnippet(label: string, tone: Tone = "info"): str
   );
 }
 
+// Render just the user message article (no OOB wrapper) - used by history
+export function renderUserMessageHtml(content: string, id: string): string {
+  return renderToString(
+    <article class="chat-message chat-message--user" id={id}>
+      <div class="chat-message__bubble">
+        <p class="chat-message__text">{content}</p>
+      </div>
+    </article>,
+  );
+}
+
 export function renderChatUserMessageSnippet(content: string, id: string): string {
   return renderToString(
     <div id="chat-message-list" hx-swap-oob="beforeend">
@@ -96,6 +107,21 @@ function CopyButton() {
         </svg>
       </button>
     </div>
+  );
+}
+
+// Render just the agent message article (no OOB wrapper) - used by history
+export function renderAgentMessageHtml(content: string, id: string): string {
+  const htmlContent = parseMarkdown(content);
+  return renderToString(
+    <article class="chat-message chat-message--agent" id={id}>
+      <div class="chat-message__content">
+        <div class="chat-message__bubble">
+          <div class="chat-message__text chat-message__text--markdown" dangerouslySetInnerHTML={{ __html: htmlContent }} />
+        </div>
+        <CopyButton />
+      </div>
+    </article>,
   );
 }
 
@@ -202,7 +228,7 @@ export function renderChatMessageHiddenSnippet(id: string): string {
 }
 
 // Get status class for tool status dot
-function getToolStatusClass(status: string | null | undefined): string {
+export function getToolStatusClass(status: string | null | undefined): string {
   if (!status) return "chat-tool-status--pending";
   const lower = status.toLowerCase();
   if (lower.includes("complet") || lower.includes("success") || lower.includes("done")) return "chat-tool-status--success";
@@ -211,26 +237,83 @@ function getToolStatusClass(status: string | null | undefined): string {
   return "chat-tool-status--pending";
 }
 
+// Render just the tool message article (no OOB wrapper) - used by history
+// Uses the shared ToolCallArticle component for DRY rendering
+export function renderToolMessageHtml(data: ChatToolMessageData): string {
+  return renderToString(<ToolCallArticle data={data} isNew={false} />);
+}
+
+// Message data structure for history rendering
+export interface HistoryMessage {
+  id: string;
+  role: string;
+  content: string;
+  created_at?: string;
+}
+
+// Render all history messages as HTML (no OOB wrapper)
+export function renderHistoryMessagesHtml(messages: HistoryMessage[]): string {
+  const htmlParts: string[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    const msgId = `history-msg-${i}`;
+
+    if (msg.role === "user") {
+      htmlParts.push(renderUserMessageHtml(msg.content, msgId));
+    } else if (msg.role === "tool") {
+      // Tool messages have JSON content
+      try {
+        const toolData = JSON.parse(msg.content) as {
+          toolCallId: string;
+          title: string;
+          status?: string | null;
+          kind?: string | null;
+          content: string[];
+        };
+        htmlParts.push(
+          renderToolMessageHtml({
+            id: msgId,
+            title: toolData.title,
+            status: toolData.status ?? null,
+            kind: toolData.kind ?? null,
+            content: toolData.content,
+          }),
+        );
+      } catch {
+        // Skip malformed tool messages
+      }
+    } else {
+      // assistant or other roles
+      htmlParts.push(renderAgentMessageHtml(msg.content, msgId));
+    }
+  }
+
+  return htmlParts.join("");
+}
+
 // Render a tool call as its own message (appended to chat list)
 export function renderChatToolCallSnippet(data: ChatToolMessageData): string {
   return renderToString(
     <div id="chat-message-list" hx-swap-oob="beforeend">
-      {renderToolCallMessage(data)}
+      <ToolCallArticle data={data} isNew={true} />
     </div>,
   );
 }
 
 // Update an existing tool call message
 export function renderChatToolCallUpdateSnippet(data: ChatToolMessageData): string {
-  return renderToString(renderToolCallMessage(data, "outerHTML"));
+  return renderToString(<ToolCallArticle data={data} isNew={true} swap="outerHTML" />);
 }
 
-function renderToolCallMessage(data: ChatToolMessageData, swap?: "outerHTML") {
+// Shared tool call article component - single source of truth for tool message rendering
+function ToolCallArticle({ data, isNew, swap }: { data: ChatToolMessageData; isNew: boolean; swap?: "outerHTML" }) {
   const swapProps = swap ? { "hx-swap-oob": swap } : {};
   const statusClass = getToolStatusClass(data.status);
+  const messageClass = isNew ? "chat-message chat-message--tool chat-message--new" : "chat-message chat-message--tool";
 
   return (
-    <article id={data.id} class="chat-message chat-message--tool chat-message--new" data-tool-message={data.id} {...swapProps}>
+    <article id={data.id} class={messageClass} data-tool-message={data.id} {...swapProps}>
       <div class="chat-message__bubble chat-message__bubble--tool">
         <button type="button" class="chat-tool-header" data-tool-expand={data.id}>
           <span class={`chat-tool-status ${statusClass}`} aria-hidden="true"></span>

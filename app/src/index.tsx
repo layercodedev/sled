@@ -310,14 +310,18 @@ app.post("/agents/:agentId/messages/receive", async (c) => {
 });
 
 // History API - proxies to DO for conversation history
+// Supports ?format=html for pre-rendered HTML (DRY - same rendering as WebSocket)
 app.get("/agents/:agentId/history", async (c) => {
   const agentId = c.req.param("agentId");
+  const format = c.req.query("format");
   const isDebug = debugEnabled(c.env);
-  if (isDebug) console.log(`[history] fetching history for agent=${agentId}`);
+  if (isDebug) console.log(`[history] fetching history for agent=${agentId} format=${format}`);
   try {
     const instance = getAgentSession(c.env, agentId);
+    // Pass format query parameter to DO
+    const doUrl = format ? `https://agent/history?format=${format}` : "https://agent/history";
     const response = await instance.fetch(
-      new Request("https://agent/history", {
+      new Request(doUrl, {
         method: "GET",
         headers: { "X-AGENT-ID": agentId },
       }),
@@ -325,6 +329,12 @@ app.get("/agents/:agentId/history", async (c) => {
     if (!response.ok) {
       if (isDebug) console.error(`[history] DO returned error status=${response.status}`);
       return c.json({ messages: [], error: "Failed to fetch history" }, 500);
+    }
+    // Return HTML directly when format=html
+    if (format === "html") {
+      const html = await response.text();
+      if (isDebug) console.log(`[history] returning HTML len=${html.length}`);
+      return c.html(html);
     }
     const data = await response.json();
     if (isDebug) console.log(`[history] got ${(data as { messages?: unknown[] }).messages?.length ?? 0} messages`);

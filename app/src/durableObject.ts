@@ -7,6 +7,8 @@ import {
   renderPermissionPromptResolvedSnippet,
   renderSendButtonStateSnippet,
   renderSidebarAgentStateSnippet,
+  renderHistoryMessagesHtml,
+  type HistoryMessage,
 } from "./chatUiRenderer";
 import type { PermissionRequest } from "./chatSession";
 import type { Bindings, AgentRuntimeState, ResolvedAgentRuntime, LocalAgentStartResponse, AgentType, AttentionType } from "./types";
@@ -112,15 +114,24 @@ export class ClaudeContainer implements DurableObject {
 
       if (method === "GET") {
         const cursor = sql.exec("SELECT id, role, content, created_at FROM messages ORDER BY created_at ASC");
-        const messages = [...cursor];
+        const messages = [...cursor] as unknown as HistoryMessage[];
         if (debugEnabled(this.env)) {
-          const last = messages.length > 0 ? (messages[messages.length - 1] as { id?: string }) : null;
+          const last = messages.length > 0 ? messages[messages.length - 1] : null;
           console.log(`[do] history get count=${messages.length} last_id=${last?.id ?? "none"}`);
         }
 
         // Note: We do NOT mark messages as heard here.
         // Messages are marked as heard by the voice client after TTS playback.
         // This allows the voice WS to detect and play unheard messages on reconnect.
+
+        // Check if HTML format is requested (for DRY rendering)
+        const format = url.searchParams.get("format");
+        if (format === "html") {
+          const html = renderHistoryMessagesHtml(messages);
+          return new Response(html, {
+            headers: { "content-type": "text/html; charset=utf-8" },
+          });
+        }
 
         return new Response(JSON.stringify({ messages }), {
           headers: { "content-type": "application/json" },

@@ -349,7 +349,8 @@
     return div.innerHTML;
   }
 
-  // Fetch and render conversation history
+  // Fetch and render conversation history using server-side pre-rendered HTML
+  // This follows DRY principle - same rendering code for WebSocket and history messages
   // agentId parameter is optional - if provided, uses that instead of URL parsing
   function loadHistory(agentId) {
     var list = document.getElementById("chat-message-list");
@@ -375,7 +376,8 @@
     list.dataset.historyAgent = resolvedAgentId;
     list.dataset.historyLoading = "true";
 
-    var historyUrl = "/agents/" + resolvedAgentId + "/history";
+    // Request pre-rendered HTML from server (DRY - same rendering as WebSocket messages)
+    var historyUrl = "/agents/" + resolvedAgentId + "/history?format=html";
     console.log("[chat] Fetching history from: " + historyUrl);
 
     fetch(historyUrl)
@@ -384,12 +386,11 @@
         if (!response.ok) {
           throw new Error("Failed to fetch history: " + response.status);
         }
-        return response.json();
+        return response.text();
       })
-      .then(function (data) {
-        console.log("[chat] History data received:", data);
-        var messages = data.messages || [];
-        if (messages.length === 0) {
+      .then(function (html) {
+        console.log("[chat] History HTML received, length=" + html.length);
+        if (!html || html.trim().length === 0) {
           console.log("[chat] No history found");
           list.dataset.historyLoading = "false";
           list.dataset.historyLoaded = "true";
@@ -408,28 +409,16 @@
           return;
         }
 
-        // Insert history messages before the placeholder
+        // Insert pre-rendered HTML before the placeholder
+        // Create a temporary container to parse the HTML
+        var temp = document.createElement("div");
+        temp.innerHTML = html;
+
+        // Move all children to a fragment
         var fragment = document.createDocumentFragment();
-        messages.forEach(function (msg, index) {
-          var id = "history-msg-" + index;
-          var el;
-          if (msg.role === "user") {
-            el = createUserMessageElement(msg.content, id);
-          } else if (msg.role === "tool") {
-            // Tool messages have JSON content
-            try {
-              var toolData = JSON.parse(msg.content);
-              el = createToolMessageElement(toolData, id);
-            } catch (e) {
-              // If JSON parsing fails, skip this message
-              console.warn("[chat] Failed to parse tool message:", e);
-              return;
-            }
-          } else {
-            el = createAgentMessageElement(msg.content, id);
-          }
-          fragment.appendChild(el);
-        });
+        while (temp.firstChild) {
+          fragment.appendChild(temp.firstChild);
+        }
 
         // Insert before the placeholder
         if (placeholder && placeholder.parentNode === list) {
@@ -441,7 +430,7 @@
         list.dataset.historyLoading = "false";
         list.dataset.historyLoaded = "true";
         _historyLoaded = true;
-        console.log("[chat] Loaded " + messages.length + " history messages");
+        console.log("[chat] Loaded history HTML");
       })
       .catch(function (err) {
         console.error("[chat] Error loading history:", err);
