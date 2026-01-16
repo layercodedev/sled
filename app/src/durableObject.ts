@@ -449,56 +449,82 @@ export class ClaudeContainer implements DurableObject {
     // Track pending permission requests by requestId (ACP spec uses numeric IDs)
     const pendingPermissions = new Map<number, { request: PermissionRequest; elementId: string }>();
 
-    const chatSession = new ChatSession({
-      sendUpstream,
-      pushSnippet: sendToBrowser,
-      initialPermissionMode: yolo ? "bypassPermissions" : "default",
-      sessionCwd: runtime.cwd ?? undefined,
-      resumeSessionId: runtime.acpSessionId ?? undefined,
-      debug: debugEnabled(this.env),
-      onNewMessage: async (role, content) => {
-        if (debugEnabled(this.env)) {
-          console.log(
-            `[do] onNewMessage role=${role} len=${content.length} agentId=${this.agentId ?? "unknown"}`,
+    // Reuse existing chat session if available to preserve pendingPrompts state.
+    // This fixes a bug where navigating away and back would lose the assistant's
+    // response because the prompt result couldn't find its pending prompt.
+    let chatSession: ChatSession;
+    if (this.activeChatSession) {
+      chatSession = this.activeChatSession;
+      chatSession.updatePushSnippet(sendToBrowser);
+      if (debugEnabled(this.env)) {
+        console.log("[do] reusing existing chatSession on reconnect");
+      }
+    } else {
+      chatSession = new ChatSession({
+        sendUpstream,
+        pushSnippet: sendToBrowser,
+        initialPermissionMode: yolo ? "bypassPermissions" : "default",
+        sessionCwd: runtime.cwd ?? undefined,
+        resumeSessionId: runtime.acpSessionId ?? undefined,
+        debug: debugEnabled(this.env),
+        onNewMessage: async (role, content) => {
+          if (debugEnabled(this.env)) {
+            console.log(
+              `[do] onNewMessage role=${role} len=${content.length} agentId=${this.agentId ?? "unknown"}`,
+            );
+          }
+          try {
+            await this.recordHistory(role, content);
+          } catch {
+            /* ignored */
+          }
+          // Note: TTS is now handled via onSentenceReady for sentence-level speech
+        },
+        onToolCall: async (toolCall) => {
+          if (debugEnabled(this.env)) {
+            console.log(
+              `[do] onToolCall toolCallId=${toolCall.toolCallId} title=${toolCall.title} status=${toolCall.status} agentId=${this.agentId ?? "unknown"}`,
+            );
+          }
+          try {
+            await this.recordToolHistory(toolCall);
+          } catch {
+            /* ignored */
+          }
+        },
+        onSessionReady: async (sessionId) => {
+          // Store the ACP session ID for future resume
+          try {
+            await this.saveAcpSessionId(sessionId);
+          } catch {
+            /* ignored */
+          }
+        },
+        onSentenceReady: (sentence) => {
+          this.broadcastSentence(sentence);
+        },
+        onWorkingStateChange: (isWorking, toolCall) => {
+          this.setWorkingState(isWorking, toolCall);
+          // Update the send/stop button state in the chat UI
+          sendToBrowser(renderSendButtonStateSnippet(isWorking));
+        },
+        onPermissionRequest: (request) => {
+          const elementId = `permission-${request.requestId}`;
+          pendingPermissions.set(request.requestId, { request, elementId });
+          // Note: Attention is set in /messages/receive (single source of truth)
+          sendToBrowser(
+            renderPermissionPromptSnippet({
+              id: elementId,
+              requestId: request.requestId,
+              title: request.toolCall.title,
+              options: request.options,
+            }),
           );
-        }
-        try {
-          await this.recordHistory(role, content);
-        } catch {
-          /* ignored */
-        }
-        // Note: TTS is now handled via onSentenceReady for sentence-level speech
-      },
-      onSessionReady: async (sessionId) => {
-        // Store the ACP session ID for future resume
-        try {
-          await this.saveAcpSessionId(sessionId);
-        } catch {
-          /* ignored */
-        }
-      },
-      onSentenceReady: (sentence) => {
-        this.broadcastSentence(sentence);
-      },
-      onWorkingStateChange: (isWorking, toolCall) => {
-        this.setWorkingState(isWorking, toolCall);
-        // Update the send/stop button state in the chat UI
-        sendToBrowser(renderSendButtonStateSnippet(isWorking));
-      },
-      onPermissionRequest: (request) => {
-        const elementId = `permission-${request.requestId}`;
-        pendingPermissions.set(request.requestId, { request, elementId });
-        // Note: Attention is set in /messages/receive (single source of truth)
-        sendToBrowser(
-          renderPermissionPromptSnippet({
-            id: elementId,
-            requestId: request.requestId,
-            title: request.toolCall.title,
-            options: request.options,
-          }),
-        );
-      },
-    });
+        },
+      });
+      // Store the chat session for receiving messages from proxy via HTTP
+      this.activeChatSession = chatSession;
+    }
 
     // Helper to cancel all pending permission requests
     const cancelAllPendingPermissions = () => {
@@ -508,9 +534,6 @@ export class ClaudeContainer implements DurableObject {
       }
       pendingPermissions.clear();
     };
-
-    // Store the chat session for receiving messages from proxy via HTTP
-    this.activeChatSession = chatSession;
     this.chatActive = { client: server };
 
     // Clear attention state when browser connects (user is now viewing this agent)
@@ -666,6 +689,41 @@ export class ClaudeContainer implements DurableObject {
     } catch (err) {
       console.error(
         `[do] recordHistory error role=${role} len=${content.length} agentId=${this.agentId ?? "unknown"}`,
+        err,
+      );
+    }
+  }
+
+  private async recordToolHistory(toolCall: {
+    toolCallId: string;
+    title: string;
+    status?: string | null;
+    kind?: string | null;
+    content: string[];
+  }): Promise<void> {
+    try {
+      if (debugEnabled(this.env)) {
+        console.log(
+          `[do] recordToolHistory start toolCallId=${toolCall.toolCallId} title=${toolCall.title} agentId=${this.agentId ?? "unknown"}`,
+        );
+      }
+      await this.ensureMessagesTable();
+      const sql = this.ctx.storage.sql;
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      // Store tool call data as JSON in content field
+      const content = JSON.stringify({
+        toolCallId: toolCall.toolCallId,
+        title: toolCall.title,
+        status: toolCall.status ?? null,
+        kind: toolCall.kind ?? null,
+        content: toolCall.content,
+      });
+      await sql.exec("INSERT INTO messages (id, role, content, created_at) VALUES (?, ?, ?, ?)", id, "tool", content, now);
+      console.log(`[do] recordToolHistory success toolCallId=${toolCall.toolCallId} agentId=${this.agentId ?? "unknown"}`);
+    } catch (err) {
+      console.error(
+        `[do] recordToolHistory error toolCallId=${toolCall.toolCallId} agentId=${this.agentId ?? "unknown"}`,
         err,
       );
     }

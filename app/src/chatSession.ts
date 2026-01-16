@@ -22,6 +22,14 @@ type SendUpstream = (payload: string) => void;
 type PushSnippet = (html: string) => void;
 type CreateId = () => string;
 
+interface ToolCallData {
+  toolCallId: string;
+  title: string;
+  status?: string | null;
+  kind?: string | null;
+  content: string[];
+}
+
 interface ChatSessionOptions {
   sendUpstream: SendUpstream;
   pushSnippet: PushSnippet;
@@ -32,6 +40,8 @@ interface ChatSessionOptions {
   /** Session ID to resume (for Claude Code agents). When provided, the agent will attempt to resume the previous session. */
   resumeSessionId?: string;
   onNewMessage?: (role: "user" | "assistant", content: string) => void;
+  /** Callback when a tool call is completed. Used to persist tool calls for history. */
+  onToolCall?: (toolCall: ToolCallData) => void;
   /** Callback when a new ACP session is established. Use this to store the sessionId for future resume. */
   onSessionReady?: (sessionId: string) => void;
   onPermissionRequest?: (request: PermissionRequest) => void;
@@ -80,11 +90,12 @@ interface ToolMessageState {
 }
 
 export class ChatSession {
-  private readonly pushSnippet: PushSnippet;
+  private pushSnippet: PushSnippet;
   private readonly createId: CreateId;
   private readonly protocol: AgentProtocolSession;
   private readonly initialPermissionMode: string;
   private readonly onNewMessage?: (role: "user" | "assistant", content: string) => void;
+  private readonly onToolCall?: (toolCall: ToolCallData) => void;
   private readonly onSessionReady?: (sessionId: string) => void;
   private readonly onPermissionRequest?: (request: PermissionRequest) => void;
   private readonly onSentenceReady?: (sentence: string) => void;
@@ -103,6 +114,7 @@ export class ChatSession {
     this.createId = options.createId ?? (() => crypto.randomUUID());
     this.initialPermissionMode = options.initialPermissionMode;
     this.onNewMessage = options.onNewMessage;
+    this.onToolCall = options.onToolCall;
     this.onSessionReady = options.onSessionReady;
     this.onPermissionRequest = options.onPermissionRequest;
     this.onSentenceReady = options.onSentenceReady;
@@ -235,6 +247,15 @@ export class ChatSession {
         this.onPermissionRequest?.(request);
       },
     });
+  }
+
+  /**
+   * Update the pushSnippet callback when the browser reconnects.
+   * This preserves the session state (including pendingPrompts) while
+   * allowing the UI to be sent to the new WebSocket connection.
+   */
+  updatePushSnippet(pushSnippet: PushSnippet): void {
+    this.pushSnippet = pushSnippet;
   }
 
   start(): void {
@@ -460,6 +481,24 @@ export class ChatSession {
     // Update the tool call message
     const toolData = this.toToolMessageData(toolState);
     this.pushSnippet(renderChatToolCallUpdateSnippet(toolData));
+
+    // Persist tool call when it reaches a terminal status
+    if (isTerminalToolStatus(toolState.status)) {
+      try {
+        this.logDebug(
+          `[chatSession] persist tool_call toolCallId=${toolCallId} title=${toolState.title} status=${toolState.status}`,
+        );
+        this.onToolCall?.({
+          toolCallId,
+          title: toolState.title,
+          status: toolState.status,
+          kind: toolState.kind,
+          content: toolState.content,
+        });
+      } catch {
+        /* callback error ignored */
+      }
+    }
   }
 
   private getActivePromptState(): PromptState | undefined {

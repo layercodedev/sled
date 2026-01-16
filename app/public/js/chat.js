@@ -296,6 +296,52 @@
     return article;
   }
 
+  // Create a tool message element from history
+  // NOTE: This must match the server-side rendering in chatUiRenderer.tsx
+  function createToolMessageElement(toolData, id) {
+    var article = document.createElement("article");
+    article.className = "chat-message chat-message--tool";
+    article.id = id;
+    article.setAttribute("data-tool-message", id);
+
+    // Determine status class (matches getToolStatusClass in chatUiRenderer.tsx)
+    var statusClass = "chat-tool-status--pending";
+    var statusLower = (toolData.status || "").toLowerCase();
+    if (statusLower.includes("complete") || statusLower.includes("success") || statusLower.includes("done")) {
+      statusClass = "chat-tool-status--success";
+    } else if (statusLower.includes("fail") || statusLower.includes("error")) {
+      statusClass = "chat-tool-status--error";
+    } else if (statusLower.includes("cancel")) {
+      statusClass = "chat-tool-status--cancelled";
+    }
+
+    // Build content lines
+    var contentLines = toolData.content || [];
+    var hasDetails = contentLines.length > 0;
+
+    // Build inner HTML matching server-side structure from chatUiRenderer.tsx
+    var detailsHtml = "";
+    if (hasDetails) {
+      detailsHtml = '<div class="chat-tool-details is-hidden">';
+      contentLines.forEach(function (line) {
+        detailsHtml += '<p class="chat-tool-details__content">' + escapeHtml(line) + '</p>';
+      });
+      detailsHtml += '</div>';
+    }
+
+    article.innerHTML =
+      '<div class="chat-message__bubble chat-message__bubble--tool">' +
+      '<button type="button" class="chat-tool-header" data-tool-expand="' + id + '">' +
+      '<span class="chat-tool-status ' + statusClass + '" aria-hidden="true"></span>' +
+      '<span class="chat-tool-header__title">' + escapeHtml(toolData.title || "Tool call") + '</span>' +
+      '<span class="chat-tool-header__chevron">▸</span>' +
+      '</button>' +
+      detailsHtml +
+      '</div>';
+
+    return article;
+  }
+
   // Escape HTML to prevent XSS
   function escapeHtml(text) {
     var div = document.createElement("div");
@@ -366,10 +412,22 @@
         var fragment = document.createDocumentFragment();
         messages.forEach(function (msg, index) {
           var id = "history-msg-" + index;
-          var el =
-            msg.role === "user"
-              ? createUserMessageElement(msg.content, id)
-              : createAgentMessageElement(msg.content, id);
+          var el;
+          if (msg.role === "user") {
+            el = createUserMessageElement(msg.content, id);
+          } else if (msg.role === "tool") {
+            // Tool messages have JSON content
+            try {
+              var toolData = JSON.parse(msg.content);
+              el = createToolMessageElement(toolData, id);
+            } catch (e) {
+              // If JSON parsing fails, skip this message
+              console.warn("[chat] Failed to parse tool message:", e);
+              return;
+            }
+          } else {
+            el = createAgentMessageElement(msg.content, id);
+          }
           fragment.appendChild(el);
         });
 
