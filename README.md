@@ -113,7 +113,7 @@ Use a strong password. This exposes your machine to the internet.
 ┌─────────────┐                    ┌──────────────┐                    ┌─────────────┐
 │   Phone     │ ◄───Tailscale────► │    Sled      │ ◄───ACP──────────► │ Claude Code │
 │  (browser)  │                    │  (your Mac)  │                    │    Codex    │
-│  (browser)  │                    │  (your Mac)  │                    │    Gemini   │
+│             │                    │              │                    │    Gemini   │
 └─────────────┘                    └──────────────┘                    └─────────────┘
 ```
 
