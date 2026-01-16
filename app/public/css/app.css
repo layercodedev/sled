@@ -2151,7 +2151,9 @@ player-title,
 }
 
 .chat-permission__btn--allow_once:hover:not(:disabled) {
-  background-color: rgba(16, 185, 129, 0.25);
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.7);
+  color: #047857;
 }
 
 .chat-permission__btn--allow_always {
@@ -2161,7 +2163,9 @@ player-title,
 }
 
 .chat-permission__btn--allow_always:hover:not(:disabled) {
-  background-color: rgba(59, 130, 246, 0.25);
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.7);
+  color: #1d4ed8;
 }
 
 .chat-permission__btn--reject_once {
@@ -2171,7 +2175,9 @@ player-title,
 }
 
 .chat-permission__btn--reject_once:hover:not(:disabled) {
-  background-color: rgba(239, 68, 68, 0.2);
+  background-color: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #991b1b;
 }
 
 /* Tool call messages (individual tool calls shown as messages) */
