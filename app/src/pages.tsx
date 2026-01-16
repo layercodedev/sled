@@ -8,7 +8,7 @@ type AppShellProps = {
   agents: AgentRow[];
   currentAgentId: string | null;
   runningAgentIds: Set<string>;
-  voiceWorkerBaseUrl: string;
+  voiceWorkerBaseUrl: string | null;
   children: unknown;
 };
 
@@ -22,7 +22,7 @@ export const AppShell = ({ agents, currentAgentId, runningAgentIds, voiceWorkerB
       class={`app-shell ${isIndexPage ? "app-shell--index" : ""}`}
       id="app-shell"
       data-is-index={isIndexPage ? "true" : "false"}
-      data-voice-base={voiceWorkerBaseUrl}
+      data-voice-base={voiceWorkerBaseUrl ?? undefined}
     >
       {/* Sidebar with agent list */}
       <aside class="app-sidebar" id="app-sidebar">
@@ -169,7 +169,7 @@ export const SidebarActiveStateOOB = ({ currentAgentId }: SidebarActiveStateOOBP
 // ===== New Agent Page (Main Content) =====
 type NewAgentPageProps = {
   defaultVoice: Voice | null;
-  voiceWorkerBaseUrl: string;
+  voiceWorkerBaseUrl: string | null;
 };
 
 export const NewAgentPage = ({ defaultVoice, voiceWorkerBaseUrl }: NewAgentPageProps) => {
@@ -225,16 +225,18 @@ export const NewAgentPage = ({ defaultVoice, voiceWorkerBaseUrl }: NewAgentPageP
                 placeholder="~/"
               />
             </div>
-            <div class="new-agent-form__option">
-              <label class="new-agent-form__option-label" for="agent-voice">
-                Voice
-              </label>
-              <select id="agent-voice" name="voice" class="new-agent-form__option-select" data-voice-base={voiceWorkerBaseUrl}>
-                <option value={defaultVoice || DEFAULT_VOICE} selected>
-                  {defaultVoice || DEFAULT_VOICE}
-                </option>
-              </select>
-            </div>
+            {voiceWorkerBaseUrl ? (
+              <div class="new-agent-form__option">
+                <label class="new-agent-form__option-label" for="agent-voice">
+                  Voice
+                </label>
+                <select id="agent-voice" name="voice" class="new-agent-form__option-select" data-voice-base={voiceWorkerBaseUrl}>
+                  <option value={defaultVoice || DEFAULT_VOICE} selected>
+                    {defaultVoice || DEFAULT_VOICE}
+                  </option>
+                </select>
+              </div>
+            ) : null}
             <label class="new-agent-form__yolo-toggle">
               <input type="checkbox" name="yolo" checked />
               <span>YOLO</span>
@@ -259,7 +261,7 @@ type AgentChatPageProps = {
   voice: Voice | null;
   workdir: string | null;
   wsPath: string;
-  voiceWsUrl: string;
+  voiceWsUrl: string | null;
   debug?: boolean;
 };
 
@@ -270,7 +272,12 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
   const workdirLabel = workdir ? workdir : null;
 
   return (
-    <main class="chat-app" ws-connect={`${wsPath}?cid=${cid}`} ws-max-retries="3" data-voice-ws={voiceWsUrl}>
+    <main
+      class="chat-app"
+      ws-connect={`${wsPath}?cid=${cid}`}
+      ws-max-retries="3"
+      data-voice-ws={voiceWsUrl ?? undefined}
+    >
       {debug ? <script dangerouslySetInnerHTML={{ __html: "window.__DEBUG_LOG__='1'" }} /> : null}
       <header class="chat-app__header">
         {/* Mobile back button */}
@@ -322,11 +329,13 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
               </option>
             </select>
           )}
-          <select id="chat-voice-select" class="chat-app__select" data-agent-id={agentId} title="TTS Voice">
-            <option value={voice || DEFAULT_VOICE} selected>
-              {voice || DEFAULT_VOICE}
-            </option>
-          </select>
+          {voiceWsUrl ? (
+            <select id="chat-voice-select" class="chat-app__select" data-agent-id={agentId} title="TTS Voice">
+              <option value={voice || DEFAULT_VOICE} selected>
+                {voice || DEFAULT_VOICE}
+              </option>
+            </select>
+          ) : null}
           <button type="button" id="ws-reconnect-btn" class="button chat-reconnect-btn is-hidden" title="Reconnect to agent">
             Reconnect
           </button>
@@ -449,47 +458,49 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
               </svg>
             </button>
             {/* Mic toggle with status dot */}
-            <button type="button" id="mic-toggle" class="chat-mic-btn" title="Mute/unmute microphone" aria-pressed="true">
-              <span class="chat-mic-btn__dot" aria-hidden="true"></span>
-              <span class="chat-mic-btn__text">Enable Voice Mode</span>
-              <span class="chat-mic-btn__powered">
-                <span class="chat-mic-btn__powered-text">Powered by</span>
-                <img class="chat-mic-btn__powered-logo" src="/img/layercode-icon.svg" alt="Layercode" />
-              </span>
-              {/* mic icon - shown when unmuted */}
-              <svg
-                class="icon icon--mic"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M12 19v3"></path>
-                <path d="M8 5v7a4 4 0 0 0 8 0V5a4 4 0 0 0-8 0"></path>
-                <path d="M5 12v0a7 7 0 0 0 14 0v0"></path>
-              </svg>
-              {/* mic-off icon - shown when muted */}
-              <svg
-                class="icon icon--mic-off"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="2" x2="22" y1="2" y2="22"></line>
-                <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"></path>
-                <path d="M5 10v2a7 7 0 0 0 12 5"></path>
-                <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"></path>
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12"></path>
-                <line x1="12" x2="12" y1="19" y2="22"></line>
-              </svg>
-            </button>
+            {voiceWsUrl ? (
+              <button type="button" id="mic-toggle" class="chat-mic-btn" title="Mute/unmute microphone" aria-pressed="true">
+                <span class="chat-mic-btn__dot" aria-hidden="true"></span>
+                <span class="chat-mic-btn__text">Enable Voice Mode</span>
+                <span class="chat-mic-btn__powered">
+                  <span class="chat-mic-btn__powered-text">Powered by</span>
+                  <img class="chat-mic-btn__powered-logo" src="/img/layercode-icon.svg" alt="Layercode" />
+                </span>
+                {/* mic icon - shown when unmuted */}
+                <svg
+                  class="icon icon--mic"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 19v3"></path>
+                  <path d="M8 5v7a4 4 0 0 0 8 0V5a4 4 0 0 0-8 0"></path>
+                  <path d="M5 12v0a7 7 0 0 0 14 0v0"></path>
+                </svg>
+                {/* mic-off icon - shown when muted */}
+                <svg
+                  class="icon icon--mic-off"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <line x1="2" x2="22" y1="2" y2="22"></line>
+                  <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"></path>
+                  <path d="M5 10v2a7 7 0 0 0 12 5"></path>
+                  <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"></path>
+                  <path d="M9 9v3a3 3 0 0 0 5.12 2.12"></path>
+                  <line x1="12" x2="12" y1="19" y2="22"></line>
+                </svg>
+              </button>
+            ) : null}
           </div>
         </div>
       </form>

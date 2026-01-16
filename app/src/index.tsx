@@ -356,7 +356,7 @@ app.get("/agents/:agentId/chat", async (c) => {
   const isDebug = debugEnabled(c.env);
   const agents = await listAgents(c.env.DB, user.id);
 
-  // Build voice ws URL (external voice worker if configured, else null for fallback)
+  // Build voice ws URL (disabled when DISABLE_VOICE_MODE is set)
   const voiceWsUrl = buildVoiceWsUrl(c.env, agentVoice, agentId);
 
   // Fetch running status for all agents (for sidebar)
@@ -391,7 +391,7 @@ app.get("/agents/:agentId/chat/content", async (c) => {
   const wsPath = `/agents/${agentId}/chat/ws`;
   const isDebug = debugEnabled(c.env);
 
-  // Build voice ws URL (external voice worker if configured, else null for fallback)
+  // Build voice ws URL (disabled when DISABLE_VOICE_MODE is set)
   const voiceWsUrl = buildVoiceWsUrl(c.env, agentVoice, agentId);
 
   // Return content with OOB swap for sidebar active state

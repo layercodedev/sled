@@ -460,19 +460,14 @@ export class ClaudeContainer implements DurableObject {
     // Track pending permission requests by requestId (ACP spec uses numeric IDs)
     const pendingPermissions = new Map<number, { request: PermissionRequest; elementId: string }>();
 
-    // Reuse existing chat session if available to preserve pendingPrompts state.
-    // This fixes a bug where navigating away and back would lose the assistant's
-    // response because the prompt result couldn't find its pending prompt.
+    // Always create a fresh chat session on browser (re)connect.
+    // We used to reuse the existing chatSession to preserve pendingPrompts state,
+    // but this caused a bug: if the agent proxy respawned, the old pendingPrompts
+    // would be orphaned (the new agent has no session), and start() wouldn't
+    // re-initialize because started=true. This left prompts stuck forever.
+    // Creating a fresh session ensures proper protocol init with the current agent.
     const initialPermissionMode = runtime?.permissionMode ?? (yolo ? "bypassPermissions" : "default");
-    let chatSession: ChatSession;
-    if (this.activeChatSession) {
-      chatSession = this.activeChatSession;
-      chatSession.updatePushSnippet(sendToBrowser);
-      if (debugEnabled(this.env)) {
-        console.log("[do] reusing existing chatSession on reconnect");
-      }
-    } else {
-      chatSession = new ChatSession({
+    const chatSession = new ChatSession({
         sendUpstream,
         pushSnippet: sendToBrowser,
         initialPermissionMode,
@@ -533,10 +528,9 @@ export class ClaudeContainer implements DurableObject {
             }),
           );
         },
-      });
-      // Store the chat session for receiving messages from proxy via HTTP
-      this.activeChatSession = chatSession;
-    }
+    });
+    // Store the chat session for receiving messages from proxy via HTTP
+    this.activeChatSession = chatSession;
 
     // Helper to cancel all pending permission requests
     const cancelAllPendingPermissions = () => {

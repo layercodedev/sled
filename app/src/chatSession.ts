@@ -249,15 +249,6 @@ export class ChatSession {
     });
   }
 
-  /**
-   * Update the pushSnippet callback when the browser reconnects.
-   * This preserves the session state (including pendingPrompts) while
-   * allowing the UI to be sent to the new WebSocket connection.
-   */
-  updatePushSnippet(pushSnippet: PushSnippet): void {
-    this.pushSnippet = pushSnippet;
-  }
-
   start(): void {
     if (this.started) {
       return;

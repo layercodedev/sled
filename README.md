@@ -77,6 +77,13 @@ ngrok http 8787 --basic-auth="myuser:your-secure-password"
 
 For a more secure long-term setup, use [Tailscale](https://tailscale.com) to access your machine over a private network.
 
+## Optional Configuration
+
+Sled reads runtime options from environment variables (e.g. `.dev.vars` or `wrangler.jsonc`).
+
+- `DISABLE_VOICE_MODE` (optional): Set to any non-empty value to disable voice mode  and all connections to layercode.com's voice api.
+
+
 ## Tech Stack
 
 - **[Hono](https://hono.dev)** - Web framework
@@ -86,4 +93,4 @@ For a more secure long-term setup, use [Tailscale](https://tailscale.com) to acc
 
 ## License
 
-MIT 
+MIT

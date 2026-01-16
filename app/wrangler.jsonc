@@ -27,23 +27,14 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "coder",
+      "database_name": "sled",
       "database_id": "c3dd73bf-6dc9-4496-a5cc-7d3c54b83c25",
     },
   ],
   // External voice worker URL for deployed environments
   // In local dev, override this in .dev.vars or leave unset to use built-in voice endpoint
   "vars": {
-    "VOICE_WORKER_URL": "https://api-oss.layercode.com",
-  },
-  // Production-only routes (use: wrangler deploy --env production)
-  "env": {
-    "production": {
-      "routes": [
-        { "pattern": "*.layercode.ai/*", "zone_name": "layercode.ai" },
-        { "pattern": "layercode.ai/*", "zone_name": "layercode.ai" },
-      ],
-    },
+    "DISABLE_VOICE_MODE": "false",
   },
   // "compatibility_flags": [
   //   "nodejs_compat"

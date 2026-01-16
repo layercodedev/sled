@@ -92,6 +92,8 @@ export type Bindings = {
   GOOGLE_AI_API_KEY?: string;
   // Voice worker URL - if set, overrides the default (api-oss.layercode.com)
   VOICE_WORKER_URL?: string;
+  // When set, disables voice mode UI and external voice worker connections
+  DISABLE_VOICE_MODE?: string | boolean;
 };
 
 // --- D1 Database type alias ---

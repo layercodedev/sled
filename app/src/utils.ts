@@ -64,6 +64,13 @@ export function getWorkerCallbackBaseUrl(env: Bindings): string {
 
 const DEFAULT_VOICE_WORKER_URL = "https://api-oss.layercode.com";
 
+export function voiceModeDisabled(env: Bindings): boolean {
+  const raw = env.DISABLE_VOICE_MODE;
+  if (raw === undefined || raw === null) return false;
+  if (typeof raw === "string") return raw.trim().length > 0;
+  return true;
+}
+
 /**
  * Builds the voice WebSocket URL for connecting to the external voice worker.
  * Uses api-oss.layercode.com by default, can be overridden with VOICE_WORKER_URL.
@@ -72,7 +79,8 @@ const DEFAULT_VOICE_WORKER_URL = "https://api-oss.layercode.com";
  * @param voice - TTS voice ID
  * @returns Full voice ws URL
  */
-export function getVoiceWorkerBaseUrl(env: Bindings): string {
+export function getVoiceWorkerBaseUrl(env: Bindings): string | null {
+  if (voiceModeDisabled(env)) return null;
   const raw = env.VOICE_WORKER_URL?.trim();
   if (raw && raw.length > 0) {
     return raw.replace(/\/+$/, "");
@@ -80,6 +88,8 @@ export function getVoiceWorkerBaseUrl(env: Bindings): string {
   return DEFAULT_VOICE_WORKER_URL;
 }
 
-export function buildVoiceWsUrl(env: Bindings, voice: string, agentId: string): string {
-  return `${getVoiceWorkerBaseUrl(env).replace(/^http/, "ws")}/ws?${new URLSearchParams({ voice, agentId }).toString()}`;
+export function buildVoiceWsUrl(env: Bindings, voice: string, agentId: string): string | null {
+  const base = getVoiceWorkerBaseUrl(env);
+  if (!base) return null;
+  return `${base.replace(/^http/, "ws")}/ws?${new URLSearchParams({ voice, agentId }).toString()}`;
 }
