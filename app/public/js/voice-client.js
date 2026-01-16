@@ -178,6 +178,8 @@
     this._voiceIdleTimer = null;
     this._voiceTimedOut = false;
     this._showPowered = false;
+    this._pendingAudio = [];
+    this._playerConnectPromise = null;
   }
 
   VoiceClient.prototype.init = async function () {
@@ -315,6 +317,9 @@
               self.player.context.state === "suspended"
             ) {
               self.player.connect();
+            }
+            if (typeof self._flushPendingAudio === "function") {
+              self._flushPendingAudio();
             }
           } catch (e) {}
         },
@@ -589,6 +594,8 @@
     }
     this._clearVoiceIdleTimer();
     this._voiceTimedOut = false;
+    this._pendingAudio = [];
+    this._playerConnectPromise = null;
     this.stopPlayback();
   };
 
@@ -889,17 +896,7 @@
     }
     // Legacy turn-end gating removed; timed ignore window is used instead.
     if (t === "response.audio" && typeof msg.content === "string") {
-      try {
-        var pcm = base64ToArrayBuffer(msg.content);
-        if (vdebug()) console.debug("[voice-client] tts_chunk bytes=", pcm.byteLength, "turn_id=", msg.turn_id);
-        if (this.player && typeof this.player.add16BitPCM === "function") {
-          this.player.add16BitPCM(pcm, String(msg.turn_id || "default"));
-          // Show stop button when audio starts playing
-          this._setPlaying(true);
-        }
-      } catch (e) {
-        // console.warn("[voice] Failed to decode/play audio chunk", e);
-      }
+      this._enqueueAudio(msg.content, String(msg.turn_id || "default"));
       return;
     }
     // Handle server notifications (toast messages from server)
@@ -915,6 +912,70 @@
       this._handleSessionTitle(msg.agentId, msg.title);
       return;
     }
+  };
+
+  VoiceClient.prototype._enqueueAudio = function (base64, trackId) {
+    if (!base64) return;
+    if (!this._pendingAudio) this._pendingAudio = [];
+    this._pendingAudio.push({ base64: base64, trackId: trackId || "default" });
+    this._flushPendingAudio();
+  };
+
+  VoiceClient.prototype._flushPendingAudio = function () {
+    var self = this;
+    if (!this._pendingAudio || this._pendingAudio.length === 0) return;
+    this._ensurePlayerReady().then(function (ready) {
+      if (!ready) return;
+      while (self._pendingAudio.length > 0) {
+        var item = self._pendingAudio.shift();
+        try {
+          if (!self.player || typeof self.player.add16BitPCM !== "function") return;
+          var pcm = base64ToArrayBuffer(item.base64);
+          if (vdebug()) console.debug("[voice-client] tts_chunk bytes=", pcm.byteLength, "turn_id=", item.trackId);
+          self.player.add16BitPCM(pcm, item.trackId);
+          // Show stop button when audio starts playing
+          self._setPlaying(true);
+        } catch (e) {
+          if (vdebug()) console.error("[voice-client] Failed to decode/play audio chunk", e);
+        }
+      }
+    });
+  };
+
+  VoiceClient.prototype._ensurePlayerReady = function () {
+    var self = this;
+    if (!this.player || typeof this.player.connect !== "function") {
+      return Promise.resolve(false);
+    }
+
+    var context = this.player.context;
+    if (context) {
+      if (context.state === "suspended" && typeof context.resume === "function") {
+        return context.resume().then(function () { return true; }).catch(function (err) {
+          if (vdebug()) console.error("[voice-client] audio resume failed", err);
+          return false;
+        });
+      }
+      if (context.state !== "closed") {
+        return Promise.resolve(true);
+      }
+    }
+
+    if (this._playerConnectPromise) return this._playerConnectPromise;
+    this._playerConnectPromise = Promise.resolve()
+      .then(function () {
+        return self.player.connect();
+      })
+      .then(function () {
+        self._playerConnectPromise = null;
+        return true;
+      })
+      .catch(function (err) {
+        self._playerConnectPromise = null;
+        if (vdebug()) console.error("[voice-client] audio connect failed", err);
+        return false;
+      });
+    return this._playerConnectPromise;
   };
 
   VoiceClient.prototype._handleSessionTitle = function (agentId, title) {
@@ -1172,13 +1233,22 @@
       if (!wsOpen) {
         client._connectWs();
         client.setMuted(false);
+        if (typeof client._flushPendingAudio === "function") {
+          client._flushPendingAudio();
+        }
         return;
       }
       if (client._needsPermission !== false) {
         client.setMuted(false);
+        if (typeof client._flushPendingAudio === "function") {
+          client._flushPendingAudio();
+        }
         return;
       }
       client.setMuted(!client._isMuted);
+      if (typeof client._flushPendingAudio === "function") {
+        client._flushPendingAudio();
+      }
     });
   }
 
