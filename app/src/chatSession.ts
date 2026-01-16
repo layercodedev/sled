@@ -93,7 +93,7 @@ export class ChatSession {
   private pushSnippet: PushSnippet;
   private readonly createId: CreateId;
   private readonly protocol: AgentProtocolSession;
-  private readonly initialPermissionMode: string;
+  private initialPermissionMode: string;
   private readonly onNewMessage?: (role: "user" | "assistant", content: string) => void;
   private readonly onToolCall?: (toolCall: ToolCallData) => void;
   private readonly onSessionReady?: (sessionId: string) => void;
@@ -594,6 +594,7 @@ export class ChatSession {
   }
 
   setMode(modeId: string): boolean {
+    this.initialPermissionMode = modeId;
     return this.protocol.setMode(modeId);
   }
 

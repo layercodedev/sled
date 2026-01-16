@@ -4,6 +4,7 @@
   var _audioContext = null; // Lazy-initialized Web Audio context
   var SIDEBAR_SCROLL_KEY = "sidebar-scroll-top";
   var NEW_AGENT_WORKDIR_KEY = "new-agent-workdir";
+  var PERMISSION_MODE_KEY_PREFIX = "permission-mode:";
 
   function restoreSidebarScroll() {
     var sidebarContent = document.querySelector(".app-sidebar__content");
@@ -171,6 +172,7 @@
   document.body.addEventListener("htmx:wsOpen", function (e) {
     if (e.detail && e.detail.socketWrapper && isChatWsElement(e.detail.elt || e.target)) {
       _chatSocketWrapper = e.detail.socketWrapper;
+      flushPendingPermissionMode();
     }
   });
   document.body.addEventListener("htmx:wsClose", function (e) {
@@ -706,20 +708,107 @@
     }
   }
 
+  var PERMISSION_MODE_LABELS = {
+    default: "Default",
+    acceptEdits: "Accept Edits",
+    plan: "Plan Mode",
+    bypassPermissions: "YOLO",
+  };
+
+  var PERMISSION_MODE_CLASSES = {
+    default: "agent-status--default",
+    acceptEdits: "agent-status--accept",
+    plan: "agent-status--plan",
+    bypassPermissions: "agent-status--yolo",
+  };
+
+  function normalizePermissionMode(modeId) {
+    if (modeId && PERMISSION_MODE_LABELS[modeId]) return modeId;
+    return "default";
+  }
+
+  function getPermissionModeKey(agentId) {
+    return PERMISSION_MODE_KEY_PREFIX + agentId;
+  }
+
+  function readStoredPermissionMode(agentId) {
+    if (!agentId) return null;
+    try {
+      return localStorage.getItem(getPermissionModeKey(agentId));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function storePermissionMode(agentId, modeId) {
+    if (!agentId) return;
+    try {
+      localStorage.setItem(getPermissionModeKey(agentId), modeId);
+    } catch (_) {}
+  }
+
+  function updatePermissionModeBadge(modeId) {
+    var badge = document.querySelector("[data-permission-mode-badge]");
+    if (!badge) return;
+    var normalized = normalizePermissionMode(modeId);
+    badge.textContent = PERMISSION_MODE_LABELS[normalized] || "Default";
+    badge.classList.remove("agent-status--default", "agent-status--accept", "agent-status--plan", "agent-status--yolo");
+    var cls = PERMISSION_MODE_CLASSES[normalized];
+    if (cls) badge.classList.add(cls);
+  }
+
+  function sendPermissionModeChange(modeId, dropdown) {
+    if (!_chatSocketWrapper) {
+      console.warn("[chat] Cannot set mode - WebSocket not connected");
+      return false;
+    }
+
+    var msg = JSON.stringify({ event: "chat_set_mode", modeId: modeId });
+    _chatSocketWrapper.sendImmediately(msg, dropdown);
+    console.log("[chat] Sent mode change:", modeId);
+    return true;
+  }
+
+  function flushPendingPermissionMode() {
+    var dropdown = document.getElementById("permission-mode");
+    if (!dropdown) return;
+    var pending = dropdown.dataset.pendingPermissionMode;
+    if (!pending) return;
+    if (sendPermissionModeChange(pending, dropdown)) {
+      delete dropdown.dataset.pendingPermissionMode;
+    }
+  }
+
   function setupPermissionModeDropdown() {
     var dropdown = document.getElementById("permission-mode");
     if (!dropdown) return;
+    if (dropdown.dataset.permissionModeBound === "true") return;
+    dropdown.dataset.permissionModeBound = "true";
+
+    var agentId = dropdown.getAttribute("data-agent-id") || getAgentIdFromUrl();
+    var initialMode = normalizePermissionMode(dropdown.getAttribute("data-initial-mode") || dropdown.value);
+    var storedMode = readStoredPermissionMode(agentId);
+    var modeToApply = normalizePermissionMode(storedMode || initialMode);
+
+    dropdown.value = modeToApply;
+    updatePermissionModeBadge(modeToApply);
+    storePermissionMode(agentId, modeToApply);
+
+    if (!sendPermissionModeChange(modeToApply, dropdown)) {
+      dropdown.dataset.pendingPermissionMode = modeToApply;
+    }
 
     dropdown.addEventListener("change", function () {
-      var modeId = dropdown.value;
-      if (!_chatSocketWrapper) {
-        console.warn("[chat] Cannot set mode - WebSocket not connected");
-        return;
-      }
+      var modeId = normalizePermissionMode(dropdown.value);
+      dropdown.value = modeId;
+      updatePermissionModeBadge(modeId);
+      storePermissionMode(agentId, modeId);
 
-      var msg = JSON.stringify({ event: "chat_set_mode", modeId: modeId });
-      _chatSocketWrapper.sendImmediately(msg, dropdown);
-      console.log("[chat] Sent mode change:", modeId);
+      if (!sendPermissionModeChange(modeId, dropdown)) {
+        dropdown.dataset.pendingPermissionMode = modeId;
+      } else {
+        delete dropdown.dataset.pendingPermissionMode;
+      }
     });
   }
 

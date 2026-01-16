@@ -306,8 +306,15 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
             {typeLabel}
           </span>
           {agentType === "claude" && (
-            <select id="permission-mode" class="chat-app__select">
-              <option value="default">Default Permissions</option>
+            <select
+              id="permission-mode"
+              class="chat-app__select"
+              data-agent-id={agentId}
+              data-initial-mode={yolo ? "bypassPermissions" : "default"}
+            >
+              <option value="default" selected={!yolo}>
+                Default Permissions
+              </option>
               <option value="acceptEdits">Accept Edits</option>
               <option value="plan">Plan Mode</option>
               <option value="bypassPermissions" selected={yolo}>
@@ -351,10 +358,15 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
                     Connecting…
                   </span>
                 </div>
-                {yolo && (
+                {agentType === "claude" && (
                   <div class="chat-info-tooltip__row">
                     <span class="chat-info-tooltip__label">Permission mode:</span>
-                    <span class="agent-status agent-status--yolo">YOLO</span>
+                    <span
+                      class={`agent-status ${yolo ? "agent-status--yolo" : "agent-status--default"}`}
+                      data-permission-mode-badge="true"
+                    >
+                      {yolo ? "YOLO" : "Default"}
+                    </span>
                   </div>
                 )}
               </div>

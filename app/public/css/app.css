@@ -62,6 +62,21 @@ main.container.player-view {
   color: #92400e;
 }
 
+.agent-status--default {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.agent-status--accept {
+  background: rgba(16, 185, 129, 0.15);
+  color: #047857;
+}
+
+.agent-status--plan {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+}
+
 /* ===== Agents Index Page ===== */
 .agents-page {
   /* Use dvh for iOS Safari dynamic viewport support */

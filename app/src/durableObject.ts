@@ -463,6 +463,7 @@ export class ClaudeContainer implements DurableObject {
     // Reuse existing chat session if available to preserve pendingPrompts state.
     // This fixes a bug where navigating away and back would lose the assistant's
     // response because the prompt result couldn't find its pending prompt.
+    const initialPermissionMode = runtime?.permissionMode ?? (yolo ? "bypassPermissions" : "default");
     let chatSession: ChatSession;
     if (this.activeChatSession) {
       chatSession = this.activeChatSession;
@@ -474,7 +475,7 @@ export class ClaudeContainer implements DurableObject {
       chatSession = new ChatSession({
         sendUpstream,
         pushSnippet: sendToBrowser,
-        initialPermissionMode: yolo ? "bypassPermissions" : "default",
+        initialPermissionMode,
         sessionCwd: runtime.cwd ?? undefined,
         resumeSessionId: runtime.acpSessionId ?? undefined,
         debug: debugEnabled(this.env),
@@ -580,6 +581,7 @@ export class ClaudeContainer implements DurableObject {
             const modeId = readStringField(parsed, "modeId") ?? "";
             if (modeId) {
               chatSession.setMode(modeId);
+              this.savePermissionMode(modeId).catch(() => {});
             }
             return;
           }
@@ -645,6 +647,7 @@ export class ClaudeContainer implements DurableObject {
     // Preserve acpSessionId from previous storage (for session resume)
     const resolvedCwd = normalizeWorkdirInput(data.cwd) ?? cwd;
     const runtimeState: AgentRuntimeState = {
+      ...stored,
       httpUrl,
       proxyPort,
       cwd: resolvedCwd,
@@ -657,6 +660,7 @@ export class ClaudeContainer implements DurableObject {
       proxyPort,
       cwd: resolvedCwd,
       acpSessionId: stored.acpSessionId ?? null,
+      permissionMode: runtimeState.permissionMode ?? null,
     };
   }
 
@@ -748,6 +752,17 @@ export class ClaudeContainer implements DurableObject {
       console.log(`[do] saveAcpSessionId success id=${sessionId}`);
     } catch (err) {
       console.error(`[do] saveAcpSessionId error:`, err);
+    }
+  }
+
+  private async savePermissionMode(modeId: string): Promise<void> {
+    try {
+      const stored = (await this.ctx.storage.get<AgentRuntimeState>("agent_runtime")) ?? {};
+      stored.permissionMode = modeId;
+      await this.ctx.storage.put("agent_runtime", stored);
+      console.log(`[do] savePermissionMode success mode=${modeId}`);
+    } catch (err) {
+      console.error(`[do] savePermissionMode error:`, err);
     }
   }
 

@@ -44,6 +44,8 @@ export type AgentRuntimeState = {
   cwd?: string | null;
   /** ACP session ID returned by the agent, used for session resume */
   acpSessionId?: string;
+  /** Last-selected permission mode for this agent/session */
+  permissionMode?: string;
   /** Type of attention this agent needs (permission request, new message, or none) */
   attentionType?: AttentionType;
 };
@@ -54,6 +56,8 @@ export type ResolvedAgentRuntime = {
   cwd: string | null;
   /** ACP session ID to resume (if available from previous session) */
   acpSessionId: string | null;
+  /** Last-selected permission mode (if any) */
+  permissionMode?: string | null;
 };
 
 export type LocalAgentStartResponse = {
