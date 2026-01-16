@@ -102,7 +102,9 @@ export const AppShell = ({ agents, currentAgentId, runningAgentIds, voiceWorkerB
                         >
                           {isRunning ? "Running" : "Stopped"}
                         </span>
-                        <span class="sidebar-agent-item__type">{a.type === "claude" ? "Claude" : "Gemini"}</span>
+                        <span class="sidebar-agent-item__type">
+                          {a.type === "claude" ? "Claude" : a.type === "codex" ? "Codex" : "Gemini"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -209,6 +211,7 @@ export const NewAgentPage = ({ defaultVoice, voiceWorkerBaseUrl }: NewAgentPageP
               <select id="agent-type" name="type" class="new-agent-form__option-select">
                 <option value="claude">Claude Code</option>
                 <option value="gemini">Gemini CLI</option>
+                <option value="codex">Codex</option>
               </select>
             </div>
             <div class="new-agent-form__option">
@@ -237,8 +240,8 @@ export const NewAgentPage = ({ defaultVoice, voiceWorkerBaseUrl }: NewAgentPageP
                 </select>
               </div>
             ) : null}
-            <label class="new-agent-form__yolo-toggle">
-              <input type="checkbox" name="yolo" checked />
+            <label class="new-agent-form__yolo-toggle" style="display: none;">
+              <input type="checkbox" name="yolo" />
               <span>YOLO</span>
             </label>
           </div>
@@ -267,17 +270,12 @@ type AgentChatPageProps = {
 
 export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir, wsPath, voiceWsUrl, debug }: AgentChatPageProps) => {
   const cid = crypto.randomUUID();
-  const typeLabel = agentType === "claude" ? "Claude" : "Gemini";
+  const typeLabel = agentType === "claude" ? "Claude" : agentType === "codex" ? "Codex" : "Gemini";
   const displayTitle = title || "New session";
   const workdirLabel = workdir ? workdir : null;
 
   return (
-    <main
-      class="chat-app"
-      ws-connect={`${wsPath}?cid=${cid}`}
-      ws-max-retries="3"
-      data-voice-ws={voiceWsUrl ?? undefined}
-    >
+    <main class="chat-app" ws-connect={`${wsPath}?cid=${cid}`} ws-max-retries="3" data-voice-ws={voiceWsUrl ?? undefined}>
       {debug ? <script dangerouslySetInnerHTML={{ __html: "window.__DEBUG_LOG__='1'" }} /> : null}
       <header class="chat-app__header">
         {/* Mobile back button */}
@@ -309,10 +307,12 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
           </span>*/}
         </div>
         <div class="chat-app__status" style="display:flex; align-items:center; gap:0.75rem;">
-          <span class={`agent-type-badge ${agentType === "claude" ? "agent-type-badge--claude" : "agent-type-badge--gemini"}`}>
+          <span
+            class={`agent-type-badge ${agentType === "claude" ? "agent-type-badge--claude" : agentType === "codex" ? "agent-type-badge--codex" : "agent-type-badge--gemini"}`}
+          >
             {typeLabel}
           </span>
-          {agentType === "claude" && (
+          {(agentType === "claude" || agentType === "codex") && (
             <select
               id="permission-mode"
               class="chat-app__select"
@@ -370,10 +370,7 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
                 {agentType === "claude" && (
                   <div class="chat-info-tooltip__row">
                     <span class="chat-info-tooltip__label">Permission mode:</span>
-                    <span
-                      class={`agent-status ${yolo ? "agent-status--yolo" : "agent-status--default"}`}
-                      data-permission-mode-badge="true"
-                    >
+                    <span class={`agent-status ${yolo ? "agent-status--yolo" : "agent-status--default"}`} data-permission-mode-badge="true">
                       {yolo ? "YOLO" : "Default"}
                     </span>
                   </div>

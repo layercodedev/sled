@@ -283,6 +283,11 @@ main.container.player-view {
   color: #1e40af;
 }
 
+.agent-type-badge--codex {
+  background: #d1fae5;
+  color: #065f46;
+}
+
 .agents-empty {
   text-align: center;
   padding: 3rem 1.5rem;

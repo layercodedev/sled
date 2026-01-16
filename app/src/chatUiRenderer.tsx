@@ -170,11 +170,12 @@ export function renderChatAgentFailureSnippet(content: string, id: string): stri
 }
 
 export function renderChatErrorSnippet(content: string, id: string): string {
+  const htmlContent = parseMarkdown(content);
   return renderToString(
     <div id="chat-message-list" hx-swap-oob="beforeend">
       <article class="chat-message chat-message--error" id={id}>
         <div class="chat-message__bubble">
-          <p class="chat-message__text">{content}</p>
+          <div class="chat-message__text chat-message__text--markdown" dangerouslySetInnerHTML={{ __html: htmlContent }} />
         </div>
       </article>
     </div>,
@@ -394,7 +395,7 @@ function renderPermissionPromptArticle(data: PermissionPromptData, swap?: "outer
 
 interface SidebarAgentState {
   agentId: string;
-  agentType: "claude" | "gemini";
+  agentType: "claude" | "gemini" | "codex";
   isWorking: boolean;
   isRunning: boolean;
   attentionType: AttentionType;
@@ -512,7 +513,7 @@ export function renderSidebarAgentStateSnippet(state: SidebarAgentState): string
         {state.isRunning ? "Running" : "Stopped"}
       </span>
       {/* Agent type */}
-      <span class="sidebar-agent-item__type">{state.agentType === "claude" ? "Claude" : "Gemini"}</span>
+      <span class="sidebar-agent-item__type">{state.agentType === "claude" ? "Claude" : state.agentType === "codex" ? "Codex" : "Gemini"}</span>
       {state.isWorking && activityText && (
         <div class="sidebar-agent-item__tool-call">
           <span class="sidebar-agent-item__spinner"></span>

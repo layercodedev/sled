@@ -67,8 +67,12 @@ const DEFAULT_VOICE_WORKER_URL = "https://api-oss.layercode.com";
 export function voiceModeDisabled(env: Bindings): boolean {
   const raw = env.DISABLE_VOICE_MODE;
   if (raw === undefined || raw === null) return false;
-  if (typeof raw === "string") return raw.trim().length > 0;
-  return true;
+  if (typeof raw === "string") {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized.length === 0 || normalized === "false") return false;
+    return true;
+  }
+  return raw === true;
 }
 
 /**

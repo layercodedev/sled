@@ -1,6 +1,6 @@
 # Sled 🛷
 
-Run your coding agent from your phone. With voice.
+Use your desktop Claude Code, Codex or Gemini CLI coding agent from your phone. With voice.
 
 <p align="center">
   <img src="mockup.gif" alt="Sled demo" width="400">
@@ -17,6 +17,14 @@ Typing on a phone is slow. Voice is fast.
 Terminals can't do two-way voice. Sled runs in the browser.
 
 That's why Sled exists.
+
+## Supported Agents
+
+| Agent | Status |
+|-------|--------|
+| Claude Code | ✔ |
+| OpenAI Codex | ✔ |
+| Gemini CLI | ✔ |
 
 ## Install
 
@@ -41,11 +49,17 @@ You need a coding agent installed:
 ```bash
 # Claude Code
 npm install -g @anthropic-ai/claude-code@latest
-# You also need Claude Code Agent Control Protocol adapter
+# You also need Agent Control Protocol adapter
 npm install -g @zed-industries/claude-code-acp
 
-# or Gemini CLI
+# Codex
+npm install -g @openai/codex
+# You also need Agent Control Protocol adapter
+npm install -g @zed-industries/codex-acp
+
+# Gemini CLI
 npm install -g @google/gemini-cli@latest
+# Gemini supports Agent Control Protocol natively
 ```
 
 Start Sled:
@@ -54,13 +68,13 @@ Start Sled:
 pnpm start
 ```
 
-Open **http://localhost:8787/agents** in your browser.
+Open **http://localhost:8787** in your browser.
 
 ## Usage
 
 ### Talk to your agent
 
-Open Sled on your phone. Tap the microphone. Say what you want.
+Open Sled on your desktop or phone. Tap 'Enable Voice Mode'. Say what you want. Then hit the send message button or press enter.
 
 ```
 "Add dark mode to the settings page"
@@ -77,7 +91,7 @@ Your agent works. When it's done, you hear what it did.
 Want me to add the CSS variables too?"
 ```
 
-## Mobile Access
+## Remote Mobile Access
 
 > **⚠️ Secure your tunnel.** If you expose your machine without proper authentication (e.g. ngrok without `--basic-auth`), anyone can control your entire computer. Coding agents can run commands, read files, and more. Use strong passwords.
 
@@ -93,20 +107,13 @@ ngrok http 8787 --basic-auth="user:password"
 
 Use a strong password. This exposes your machine to the internet.
 
-## Supported Agents
-
-| Agent | Status |
-|-------|--------|
-| Claude Code | ✔ |
-| Gemini CLI | ✔ |
-| OpenAI Codex | Coming soon |
-
 ## How It Works
 
 ```
 ┌─────────────┐                    ┌──────────────┐                    ┌─────────────┐
-│   Phone     │ ◄───Tailscale────► │    Sled      │ ◄───ACP─────────► │ Claude Code │
-│  (browser)  │                    │  (your Mac)  │                    │  or Gemini  │
+│   Phone     │ ◄───Tailscale────► │    Sled      │ ◄───ACP──────────► │ Claude Code │
+│  (browser)  │                    │  (your Mac)  │                    │    Codex    │
+│  (browser)  │                    │  (your Mac)  │                    │    Gemini   │
 └─────────────┘                    └──────────────┘                    └─────────────┘
 ```
 
@@ -133,7 +140,7 @@ Use a strong password. This exposes your machine to the internet.
 
 Sled reads runtime options from environment variables (e.g. `.dev.vars` or `wrangler.jsonc`).
 
-- `DISABLE_VOICE_MODE` (optional): Set to any non-empty value to disable voice mode  and all connections to layercode.com's voice api.
+- `DISABLE_VOICE_MODE` (optional): Set to any non-empty value other than `false` to disable voice mode and all connections to layercode.com's voice API. Leave unset/empty/`false` to keep voice mode enabled.
 
 ## Data Privacy
 

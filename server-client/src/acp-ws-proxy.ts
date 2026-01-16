@@ -30,7 +30,7 @@ const DEFAULT_PORT = 3050;
 const DEFAULT_HOST = "0.0.0.0";
 
 // Agent type configurations
-type AgentType = "gemini" | "claude";
+type AgentType = "gemini" | "claude" | "codex";
 function normalizeEnvValue(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -47,6 +47,7 @@ function ensureCliBinsOnPath(existingPath?: string): string {
 const AGENT_CONFIGS: Record<AgentType, { command: string; args: string[] }> = {
   gemini: { command: "gemini", args: ["--experimental-acp"] },
   claude: { command: "claude-code-acp", args: [] },
+  codex: { command: "codex-acp", args: [] },
 };
 
 type SpawnEnvConfig = {
@@ -88,7 +89,7 @@ export function buildSpawnEnv(config: SpawnEnvConfig): SpawnEnvResult {
 
   env.PATH = ensureCliBinsOnPath(env.PATH);
 
-  if (yoloMode && agentType === "claude") {
+  if (yoloMode && (agentType === "claude" || agentType === "codex")) {
     env.IS_SANDBOX = "1";
   }
 
@@ -96,10 +97,10 @@ export function buildSpawnEnv(config: SpawnEnvConfig): SpawnEnvResult {
   const envPrefixParts: string[] = [];
   if (agentType === "gemini" && geminiKey) {
     envPrefixParts.push(`GEMINI_API_KEY=${q(geminiKey)}`);
-  } else if (agentType === "claude" && anthropicKey) {
+  } else if ((agentType === "claude" || agentType === "codex") && anthropicKey) {
     envPrefixParts.push(`ANTHROPIC_API_KEY=${q(anthropicKey)}`);
   }
-  if (yoloMode && agentType === "claude") {
+  if (yoloMode && (agentType === "claude" || agentType === "codex")) {
     envPrefixParts.push("IS_SANDBOX=1");
   }
 
@@ -146,13 +147,16 @@ export function startProxy(options: ProxyOptions = {}): ProxyHandles {
 
     // Determine agent type from envVars (sent by client via /config)
     const agentTypeRaw = envVars?.AGENT_TYPE || "gemini";
-    const agentType: AgentType = agentTypeRaw === "claude" ? "claude" : "gemini";
+    const agentType: AgentType = agentTypeRaw === "claude" ? "claude" : agentTypeRaw === "codex" ? "codex" : "gemini";
     const yoloMode = envVars?.YOLO_MODE === "1";
     console.log(`${prefix} Config: agentType=${agentType}, yoloMode=${yoloMode}`);
     const agentConfig = AGENT_CONFIGS[agentType];
     const agentCommand = agentConfig.command;
-    // Add --dangerously-skip-permissions for claude in yolo mode
-    const agentArgs = yoloMode && agentType === "claude" ? [...agentConfig.args, "--dangerously-skip-permissions"] : agentConfig.args;
+    // Add yolo flags for agents in yolo mode (codex doesn't support yolo flags)
+    let agentArgs = [...agentConfig.args];
+    if (yoloMode && agentType === "claude") {
+      agentArgs.push("--dangerously-skip-permissions");
+    }
 
     const spawnEnv = buildSpawnEnv({
       agentType,
@@ -172,7 +176,7 @@ export function startProxy(options: ProxyOptions = {}): ProxyHandles {
     messageCallbackUrl = envVars?.MESSAGE_CALLBACK_URL ?? null;
 
     // Get API keys based on agent type
-    const activeKey = agentType === "claude" ? anthropicKey : geminiKey;
+    const activeKey = agentType === "claude" || agentType === "codex" ? anthropicKey : geminiKey;
 
     const cmdString = `${spawnEnv.envPrefix}${agentCommand} ${agentArgs.join(" ")}`;
     const maskedCmd = activeKey ? cmdString.replace(activeKey, "[REDACTED]") : cmdString;

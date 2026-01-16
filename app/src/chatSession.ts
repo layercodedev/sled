@@ -37,6 +37,8 @@ interface ChatSessionOptions {
   initialPermissionMode: string;
   sessionCwd?: string;
   debug?: boolean;
+  /** Agent type for customizing error messages */
+  agentType?: "claude" | "gemini" | "codex";
   /** Session ID to resume (for Claude Code agents). When provided, the agent will attempt to resume the previous session. */
   resumeSessionId?: string;
   onNewMessage?: (role: "user" | "assistant", content: string) => void;
@@ -94,6 +96,7 @@ export class ChatSession {
   private readonly createId: CreateId;
   private readonly protocol: AgentProtocolSession;
   private initialPermissionMode: string;
+  private readonly agentType: "claude" | "gemini" | "codex";
   private readonly onNewMessage?: (role: "user" | "assistant", content: string) => void;
   private readonly onToolCall?: (toolCall: ToolCallData) => void;
   private readonly onSessionReady?: (sessionId: string) => void;
@@ -113,6 +116,7 @@ export class ChatSession {
     this.pushSnippet = options.pushSnippet;
     this.createId = options.createId ?? (() => crypto.randomUUID());
     this.initialPermissionMode = options.initialPermissionMode;
+    this.agentType = options.agentType ?? "claude";
     this.onNewMessage = options.onNewMessage;
     this.onToolCall = options.onToolCall;
     this.onSessionReady = options.onSessionReady;
@@ -211,7 +215,6 @@ export class ChatSession {
       },
       onPromptError: (_requestId, error, metadata) => {
         const promptMeta = asPromptMetadata(metadata);
-        const details = `Agent error: ${stringify(error)}`;
         this.cancelInFlight = false;
         this.logDebug(
           `[chatSession] prompt_error agentMessageId=${promptMeta?.agentMessageId ?? "unknown"} error=${stringify(error)}`,
@@ -221,20 +224,29 @@ export class ChatSession {
         this.currentToolCallTitle = null;
         this.onWorkingStateChange?.(false, null);
 
-        if (!promptMeta) {
-          this.pushSnippet(renderChatAgentFailureSnippet(details, this.errorId()));
-          return;
-        }
-        const state = this.findStateByAgentMessageId(promptMeta.agentMessageId);
+        // Check for authentication errors and show user-friendly message
+        const details = this.getErrorMessage(error);
+        const state = promptMeta ? this.findStateByAgentMessageId(promptMeta.agentMessageId) : undefined;
+
         if (state?.cancelled) {
+          this.logDebug(`[chatSession] prompt_error state cancelled, skipping`);
           this.cancelInFlight = false;
           if (!state.cancelNoticeShown) {
             this.finalizeCancelledState(state);
           }
           return;
         }
-        const targetId = state?.agentMessageId ?? promptMeta.agentMessageId;
-        this.pushSnippet(renderChatAgentFailureSnippet(details, targetId));
+
+        // Always append error to message list - the agent message DOM element
+        // may not exist yet if the error happened before streaming started
+        this.logDebug(`[chatSession] prompt_error appending error to message list`);
+        this.pushSnippet(renderChatErrorSnippet(details, this.errorId()));
+
+        // Hide the "Agent is thinking..." notice if it exists
+        if (state) {
+          state.completed = true;
+          this.hideSystemNoticeIfNeeded(state);
+        }
         if (state) {
           state.completed = true;
           this.hideSystemNoticeIfNeeded(state);
@@ -648,6 +660,28 @@ export class ChatSession {
 
   private errorId(): string {
     return `error-${this.createId()}`;
+  }
+
+  private getErrorMessage(error: unknown): string {
+    // Check for authentication errors
+    const err = error as { code?: number; message?: string; data?: { details?: string } } | null;
+    const isAuthError =
+      (err?.code === -32000 && err?.message === "Authentication required") ||
+      err?.data?.details === "invalid_grant";
+
+    this.logDebug(`[chatSession] getErrorMessage isAuthError=${isAuthError} agentType=${this.agentType}`);
+
+    if (isAuthError) {
+      const agentCommands: Record<string, string> = {
+        claude: "claude",
+        gemini: "gemini",
+        codex: "codex",
+      };
+      const command = agentCommands[this.agentType] || this.agentType;
+      return `**Authentication Required**\n\nPlease run \`${command}\` in your terminal and login. Then come back and create a new agent.`;
+    }
+
+    return `Agent error: ${stringify(error)}`;
   }
 
   private logDebug(message: string): void {
