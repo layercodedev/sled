@@ -8,6 +8,21 @@ Use your desktop Claude Code, Codex or Gemini CLI coding agent from your phone. 
 
 > **This is experimental software.** Like an actual sled: fast and fun, but if you're not careful, you can crash into a tree.
 
+## Quick Overview
+
+**What is it?** A web UI that runs locally on your computer. It spawns local Claude Code, Codex or Gemini CLI cli agents processes on your computer. This is the same coding cli you alreay use, but we start it in a headless API mode and wrap it in a web UI. We added transcription and text-to-speech so you can talk to it and hear its responses. The web UI works great on mobile, so you can share your localhost and code from anywhere.
+
+**Do I need to deploy anything?** No. Sled runs 100% on your machine. It's written in Typescript (and runs with wrangler locally). Nothing is deployed to the cloud.
+
+**How does it control Claude Code?** Via [ACP (Agent Control Protocol)](https://github.com/ACP-Labs/protocol) — a standard protocol that wraps CLI agents. The `claude-code-acp` adapter runs Claude Code as a subprocess and exposes it via JSON-RPC.
+
+**What data leaves my machine?**
+
+We (layercode.com) built this mainly because we wanted it, but also to showcase how coding agents can be voice enabled with layercode.com. We've opened up a free (rate limited) voice API endpoint so you can enjoy voice mode without any cost. You can disble voice mode in the settings. When it is enabled, your audio and agent conversation will be sent to our API. We do not store or retain any data. Our API is hosted on Cloudflare. Everything else runs local and stays local.
+
+- ✅ **Stays local**: Your code, prompts, agent responses, session history
+- 🔊 **Sent for voice processing**: Audio recordings → [Layercode.com](https://layercode.com) (transcription + text-to-speech). Not stored. Can be disabled in settings.
+
 ## Why
 
 Coding agents need input every 10-60 minutes. If you're not at your desk, they just sit there.
@@ -145,6 +160,21 @@ Sled reads runtime options from environment variables (e.g. `.dev.vars` or `wran
 ## Data Privacy
 
 Audio and agent responses are sent through [Layercode](https://layercode.com) for voice processing (not stored). You can disable voice output in settings to keep responses local.
+
+## Uninstall
+
+To completely remove Sled:
+
+```bash
+# 1. Delete the sled directory
+rm -rf /path/to/this/repo/sled
+
+# 2. Remove the ACP adapters (optional)
+npm uninstall -g @zed-industries/claude-code-acp
+npm uninstall -g @zed-industries/codex-acp
+```
+
+That's it. No system services, daemons, or config files are installed elsewhere.
 
 ## License
 
