@@ -155,7 +155,9 @@
     this.textarea = document.getElementById("chat-input");
     this.stopBtn = document.getElementById("stop-audio");
     this.micBtn = document.getElementById("mic-toggle");
+    this.speakerBtn = document.getElementById("speaker-toggle");
     this._isMuted = false;
+    this._isSpeakerMuted = false;
     this._needsPermission = true;
     this._permissionState = "prompt";
     this._chunkSize = 4096;
@@ -656,6 +658,7 @@
 
   // localStorage key for persisting mute state across agent switches
   var MIC_MUTED_STORAGE_KEY = "voice-mic-muted";
+  var SPEAKER_MUTED_STORAGE_KEY = "voice-speaker-muted";
 
   // Try to start mic automatically; if it fails (iOS needs user gesture), show "Enable Voice Mode"
   VoiceClient.prototype._startMicWithFallback = async function () {
@@ -664,6 +667,12 @@
     try {
       persistedMuted = localStorage.getItem(MIC_MUTED_STORAGE_KEY) === "true";
     } catch (_) {}
+
+    // Load persisted speaker mute state
+    try {
+      this._isSpeakerMuted = localStorage.getItem(SPEAKER_MUTED_STORAGE_KEY) === "true";
+    } catch (_) {}
+    this._reflectSpeakerUi();
 
     try {
       await this._startMic();
@@ -832,6 +841,29 @@
     } catch (_) {}
   };
 
+  // Speaker mute toggle
+  VoiceClient.prototype.setSpeakerMuted = function (muted) {
+    this._isSpeakerMuted = !!muted;
+    // Persist to localStorage
+    try {
+      localStorage.setItem(SPEAKER_MUTED_STORAGE_KEY, String(this._isSpeakerMuted));
+    } catch (_) {}
+    // If muting and currently playing, stop playback
+    if (this._isSpeakerMuted && this._isPlaying) {
+      this.stopPlayback();
+    }
+    this._reflectSpeakerUi();
+  };
+
+  VoiceClient.prototype._reflectSpeakerUi = function () {
+    var btn = this.speakerBtn;
+    if (!btn) return;
+    try {
+      btn.setAttribute("data-muted", String(this._isSpeakerMuted));
+      btn.setAttribute("aria-pressed", String(!this._isSpeakerMuted));
+    } catch (_) {}
+  };
+
   VoiceClient.prototype._sendAudio = function (base64) {
     var ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -916,6 +948,8 @@
 
   VoiceClient.prototype._enqueueAudio = function (base64, trackId) {
     if (!base64) return;
+    // Skip audio chunks when speaker is muted
+    if (this._isSpeakerMuted) return;
     if (!this._pendingAudio) this._pendingAudio = [];
     this._pendingAudio.push({ base64: base64, trackId: trackId || "default" });
     this._flushPendingAudio();
@@ -1252,15 +1286,33 @@
     });
   }
 
+  function setupSpeakerToggleHandler() {
+    if (window.__voiceClientSpeakerHandler) return;
+    window.__voiceClientSpeakerHandler = true;
+    document.addEventListener("click", function (e) {
+      var target = e.target;
+      if (!target || typeof target.closest !== "function") return;
+      var btn = target.closest("#speaker-toggle");
+      if (!btn) return;
+      e.preventDefault();
+      initialize();
+      var client = window.__voiceClient;
+      if (!client) return;
+      client.setSpeakerMuted(!client._isSpeakerMuted);
+    });
+  }
+
   if (document.readyState === "complete" || document.readyState === "interactive") {
     initialize();
     setupHtmxReinit();
     setupMicToggleHandler();
+    setupSpeakerToggleHandler();
   } else {
     document.addEventListener("DOMContentLoaded", function () {
       initialize();
       setupHtmxReinit();
       setupMicToggleHandler();
+      setupSpeakerToggleHandler();
     });
   }
 })();

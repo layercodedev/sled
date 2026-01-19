@@ -29,18 +29,7 @@ export const AppShell = ({ agents, currentAgentId, runningAgentIds, voiceWorkerB
         <header class="app-sidebar__header">
           <h2 class="app-sidebar__title">Agents</h2>
           <button type="button" class="app-sidebar__toggle" id="sidebar-toggle" title="Hide sidebar" aria-label="Hide sidebar">
-            <svg
-              class="icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M11 17l-5-5 5-5"></path>
-              <path d="M18 17l-5-5 5-5"></path>
-            </svg>
+            <span class="icon icon--chevrons-left" aria-hidden="true"></span>
           </button>
         </header>
         <div class="app-sidebar__content">
@@ -53,18 +42,7 @@ export const AppShell = ({ agents, currentAgentId, runningAgentIds, voiceWorkerB
             hx-push-url="/agents"
             class={`sidebar-new-btn ${isIndexPage ? "is-active" : ""}`}
           >
-            <svg
-              class="icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M12 5v14"></path>
-              <path d="M5 12h14"></path>
-            </svg>
+            <span class="icon icon--plus" aria-hidden="true"></span>
             <span>New Agent</span>
           </a>
 
@@ -180,18 +158,7 @@ export const NewAgentPage = ({ defaultVoice, voiceWorkerBaseUrl }: NewAgentPageP
       <header class="new-agent-page__header">
         {/* Mobile back button */}
         <button type="button" class="chat-back-btn" id="chat-back-btn" title="Back to agents" aria-label="Back to agents">
-          <svg
-            class="icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M19 12H5"></path>
-            <path d="M12 19l-7-7 7-7"></path>
-          </svg>
+          <span class="icon icon--arrow-left" aria-hidden="true"></span>
         </button>
         <div class="new-agent-page__title">
           <h1>New Agent</h1>
@@ -280,18 +247,7 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
       <header class="chat-app__header">
         {/* Mobile back button */}
         <button type="button" class="chat-back-btn" id="chat-back-btn" title="Back to agents" aria-label="Back to agents">
-          <svg
-            class="icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M19 12H5"></path>
-            <path d="M12 19l-7-7 7-7"></path>
-          </svg>
+          <span class="icon icon--arrow-left" aria-hidden="true"></span>
         </button>
         <div class="chat-app__brand">
           <span class="chat-app__title">{displayTitle}</span>
@@ -342,19 +298,7 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
           <div class="chat-app__icon-group">
             <div class="chat-info-tooltip">
               <button type="button" class="chat-info-tooltip__trigger" aria-label="Connection info">
-                <svg
-                  class="icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M12 16v-4"></path>
-                  <path d="M12 8h.01"></path>
-                </svg>
+                <span class="icon icon--info" aria-hidden="true"></span>
               </button>
               <div class="chat-info-tooltip__content">
                 <div class="chat-info-tooltip__row">
@@ -385,19 +329,7 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
               title="End session and stop the agent"
               aria-label="End session"
             >
-              <svg
-                class="icon icon--close"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+              <span class="icon icon--close" aria-hidden="true"></span>
             </button>
           </div>
         </div>
@@ -435,24 +367,8 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
               title="Send message"
               aria-label="Send message"
             >
-              {/* Send icon (arrow up) - shown when data-state="send" */}
-              <svg
-                class="icon icon--arrow-up"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path d="m5 12 7-7 7 7"></path>
-                <path d="M12 19V5"></path>
-              </svg>
-              {/* Stop icon (square) - shown when data-state="stop" */}
-              <svg class="icon icon--stop" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <rect x="6" y="6" width="12" height="12" rx="2"></rect>
-              </svg>
+              <span class="icon icon--arrow-up" aria-hidden="true"></span>
+              <span class="icon icon--stop" aria-hidden="true"></span>
             </button>
             {/* Mic toggle with status dot */}
             {voiceWsUrl ? (
@@ -463,39 +379,15 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
                   <span class="chat-mic-btn__powered-text">Powered by</span>
                   <img class="chat-mic-btn__powered-logo" src="/img/layercode-icon.svg" alt="Layercode" />
                 </span>
-                {/* mic icon - shown when unmuted */}
-                <svg
-                  class="icon icon--mic"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M12 19v3"></path>
-                  <path d="M8 5v7a4 4 0 0 0 8 0V5a4 4 0 0 0-8 0"></path>
-                  <path d="M5 12v0a7 7 0 0 0 14 0v0"></path>
-                </svg>
-                {/* mic-off icon - shown when muted */}
-                <svg
-                  class="icon icon--mic-off"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <line x1="2" x2="22" y1="2" y2="22"></line>
-                  <path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"></path>
-                  <path d="M5 10v2a7 7 0 0 0 12 5"></path>
-                  <path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"></path>
-                  <path d="M9 9v3a3 3 0 0 0 5.12 2.12"></path>
-                  <line x1="12" x2="12" y1="19" y2="22"></line>
-                </svg>
+                <span class="icon icon--mic" aria-hidden="true"></span>
+                <span class="icon icon--mic-off" aria-hidden="true"></span>
+              </button>
+            ) : null}
+            {/* Speaker mute button */}
+            {voiceWsUrl ? (
+              <button type="button" id="speaker-toggle" class="chat-speaker-btn" title="Mute/unmute agent audio" aria-pressed="true">
+                <span class="icon icon--speaker" aria-hidden="true"></span>
+                <span class="icon icon--speaker-off" aria-hidden="true"></span>
               </button>
             ) : null}
           </div>

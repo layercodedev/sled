@@ -68,9 +68,7 @@ function AudioControlButtons() {
     <div class="chat-message__audio-controls">
       <span class="chat-message__audio-label">Agent Speaking</span>
       <button type="button" class="chat-audio-btn chat-audio-btn--stop" title="Stop speaking" aria-label="Stop">
-        <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
-          <rect x="6" y="6" width="12" height="12" rx="1" />
-        </svg>
+        <span class="icon icon--stop" aria-hidden="true"></span>
       </button>
     </div>
   );
@@ -80,31 +78,8 @@ function CopyButton() {
   return (
     <div class="chat-message__actions">
       <button type="button" class="chat-action-btn chat-action-btn--copy" title="Copy message" aria-label="Copy message">
-        <svg
-          class="icon icon--copy"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-        </svg>
-        <svg
-          class="icon icon--check"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
+        <span class="icon icon--copy" aria-hidden="true"></span>
+        <span class="icon icon--check" aria-hidden="true"></span>
       </button>
     </div>
   );
@@ -421,24 +396,8 @@ export function renderSendButtonStateSnippet(isWorking: boolean): string {
       aria-label={ariaLabel}
       hx-swap-oob="outerHTML"
     >
-      {/* Send icon (arrow up) - shown when data-state="send" */}
-      <svg
-        class="icon icon--arrow-up"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="m5 12 7-7 7 7"></path>
-        <path d="M12 19V5"></path>
-      </svg>
-      {/* Stop icon (square) - shown when data-state="stop" */}
-      <svg class="icon icon--stop" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <rect x="6" y="6" width="12" height="12" rx="2"></rect>
-      </svg>
+      <span class="icon icon--arrow-up" aria-hidden="true"></span>
+      <span class="icon icon--stop" aria-hidden="true"></span>
     </button>,
   );
 }
@@ -482,9 +441,7 @@ export function renderSidebarAgentStateSnippet(state: SidebarAgentState): string
       // Shield icon for permission request
       return (
         <span class="sidebar-agent-item__attention sidebar-agent-item__attention--permission" title="Permission request">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
+          <span class="icon icon--shield" aria-hidden="true"></span>
         </span>
       );
     }
@@ -492,9 +449,7 @@ export function renderSidebarAgentStateSnippet(state: SidebarAgentState): string
     // Chat bubble icon for new message
     return (
       <span class="sidebar-agent-item__attention sidebar-agent-item__attention--message" title="New message">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
+        <span class="icon icon--message-square" aria-hidden="true"></span>
       </span>
     );
   };

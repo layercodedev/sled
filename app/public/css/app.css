@@ -1818,6 +1818,95 @@ player-title,
   color: var(--muted-foreground);
 }
 
+/* Icon system using CSS mask-image for color inheritance */
+.icon {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.icon--arrow-up {
+  -webkit-mask-image: url('/img/arrow-up.svg');
+  mask-image: url('/img/arrow-up.svg');
+}
+
+.icon--stop {
+  -webkit-mask-image: url('/img/stop.svg');
+  mask-image: url('/img/stop.svg');
+}
+
+.icon--mic {
+  -webkit-mask-image: url('/img/mic.svg');
+  mask-image: url('/img/mic.svg');
+}
+
+.icon--mic-off {
+  -webkit-mask-image: url('/img/mic-off.svg');
+  mask-image: url('/img/mic-off.svg');
+}
+
+.icon--speaker {
+  -webkit-mask-image: url('/img/volume-2.svg');
+  mask-image: url('/img/volume-2.svg');
+}
+
+.icon--speaker-off {
+  -webkit-mask-image: url('/img/volume-off.svg');
+  mask-image: url('/img/volume-off.svg');
+}
+
+.icon--copy {
+  -webkit-mask-image: url('/img/copy.svg');
+  mask-image: url('/img/copy.svg');
+}
+
+.icon--check {
+  -webkit-mask-image: url('/img/check.svg');
+  mask-image: url('/img/check.svg');
+}
+
+.icon--shield {
+  -webkit-mask-image: url('/img/shield.svg');
+  mask-image: url('/img/shield.svg');
+}
+
+.icon--message-square {
+  -webkit-mask-image: url('/img/message-square.svg');
+  mask-image: url('/img/message-square.svg');
+}
+
+.icon--chevrons-left {
+  -webkit-mask-image: url('/img/chevrons-left.svg');
+  mask-image: url('/img/chevrons-left.svg');
+}
+
+.icon--plus {
+  -webkit-mask-image: url('/img/plus.svg');
+  mask-image: url('/img/plus.svg');
+}
+
+.icon--arrow-left {
+  -webkit-mask-image: url('/img/arrow-left.svg');
+  mask-image: url('/img/arrow-left.svg');
+}
+
+.icon--info {
+  -webkit-mask-image: url('/img/info.svg');
+  mask-image: url('/img/info.svg');
+}
+
+.icon--close {
+  -webkit-mask-image: url('/img/x.svg');
+  mask-image: url('/img/x.svg');
+}
+
 .chat-send-btn {
   /* Custom circular send button */
   all: unset;
@@ -1868,7 +1957,7 @@ player-title,
 }
 
 .chat-send-btn[data-state="stop"] .icon--stop {
-  display: block;
+  display: inline-block;
 }
 
 /* Stop state styling - red background */
@@ -1972,7 +2061,7 @@ player-title,
 
 /* Default state: show mic icon, hide mic-off icon (before JS sets data-muted) */
 .chat-mic-btn .icon--mic {
-  display: inline;
+  display: inline-block;
 }
 .chat-mic-btn .icon--mic-off {
   display: none;
@@ -1982,7 +2071,7 @@ player-title,
   display: none;
 }
 .chat-mic-btn[data-muted="true"] .icon--mic-off {
-  display: inline;
+  display: inline-block;
 }
 
 /* "Enable Voice Mode" text - hidden by default, shown when permissions needed */
@@ -2082,7 +2171,70 @@ player-title,
 
 .chat-mic-btn[data-needs-permission="true"] .icon--mic,
 .chat-mic-btn[data-powered="true"] .icon--mic {
+  display: inline-block;
+}
+
+/* Speaker mute button styles */
+.chat-speaker-btn {
+  all: unset;
+  background: transparent;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.chat-speaker-btn .icon {
+  width: 1.25rem;
+  height: 1.25rem;
   display: inline;
+}
+
+.chat-speaker-btn:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  color: var(--foreground) !important;
+}
+
+.chat-speaker-btn:focus,
+.chat-speaker-btn:focus-visible {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: var(--foreground) !important;
+}
+
+.chat-speaker-btn:active {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transform: none !important;
+  color: var(--foreground) !important;
+}
+
+/* Default state: show speaker icon, hide speaker-off icon */
+.chat-speaker-btn .icon--speaker {
+  display: inline-block;
+}
+.chat-speaker-btn .icon--speaker-off {
+  display: none;
+}
+
+/* Muted state: show speaker-off, hide speaker */
+.chat-speaker-btn[data-muted="true"] .icon--speaker {
+  display: none;
+}
+.chat-speaker-btn[data-muted="true"] .icon--speaker-off {
+  display: inline-block;
 }
 
 .is-visually-hidden {
@@ -3159,13 +3311,15 @@ player-title,
   }
 
   .chat-send-btn,
-  .chat-mic-btn {
+  .chat-mic-btn,
+  .chat-speaker-btn {
     width: 2.75rem;
     height: 2.75rem;
   }
 
   .chat-send-btn .icon,
-  .chat-mic-btn .icon {
+  .chat-mic-btn .icon,
+  .chat-speaker-btn .icon {
     width: 1.375rem;
     height: 1.375rem;
   }
