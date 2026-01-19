@@ -164,6 +164,16 @@ export class ChatSession {
           return;
         }
         const state = this.findStateByAgentMessageId(promptMeta.agentMessageId);
+        // Debug: log state lookup result
+        if (!state) {
+          const activeState = this.getActivePromptState();
+          const allIds = this.promptStates.map((s) => s.agentMessageId).join(", ");
+          console.error(
+            `[chatSession] prompt_result STATE_NOT_FOUND agentMessageId=${promptMeta.agentMessageId} ` +
+              `activeStateId=${activeState?.agentMessageId ?? "none"} activeStateContentLen=${activeState?.agentContent.length ?? 0} ` +
+              `totalStates=${this.promptStates.length} allStateIds=[${allIds}]`,
+          );
+        }
         const stopReason = readStopReason(result);
         if (stopReason === "cancelled") {
           this.cancelInFlight = false;
@@ -176,7 +186,8 @@ export class ChatSession {
         const fallbackContent = extractContent(result);
         const rendered = normalizeAgentContent(state, fallbackContent);
         this.logDebug(
-          `[chatSession] prompt_result agentMessageId=${promptMeta.agentMessageId} stopReason=${stopReason ?? "null"} renderedLen=${rendered.length}`,
+          `[chatSession] prompt_result agentMessageId=${promptMeta.agentMessageId} stateFound=${!!state} ` +
+            `stateContentLen=${state?.agentContent.length ?? 0} fallbackLen=${fallbackContent.length} renderedLen=${rendered.length}`,
         );
 
         // Update the current segment with final content (or create one if none exists)
@@ -205,12 +216,19 @@ export class ChatSession {
         this.currentToolCallTitle = null;
         this.onWorkingStateChange?.(false, null);
 
-        // Persist full message for history
-        try {
-          this.logDebug(`[chatSession] persist assistant_message len=${rendered.length}`);
-          this.onNewMessage?.("assistant", rendered);
-        } catch {
-          /* callback error ignored */
+        // Persist full message for history (skip if empty)
+        if (rendered.trim().length > 0) {
+          try {
+            this.logDebug(`[chatSession] persist assistant_message len=${rendered.length}`);
+            this.onNewMessage?.("assistant", rendered);
+          } catch (err) {
+            console.error(`[chatSession] persist assistant_message FAILED agentMessageId=${promptMeta.agentMessageId}`, err);
+          }
+        } else {
+          console.error(
+            `[chatSession] SKIPPING_EMPTY_MESSAGE agentMessageId=${promptMeta.agentMessageId} ` +
+              `stateFound=${!!state} stateContentLen=${state?.agentContent.length ?? 0} fallbackLen=${fallbackContent.length}`,
+          );
         }
       },
       onPromptError: (_requestId, error, metadata) => {
@@ -278,6 +296,15 @@ export class ChatSession {
     this.logDebug(`[chatSession] user_message len=${trimmed.length}`);
     this.cancelInFlight = false;
     this.clearOrphanAgentMessage();
+
+    // Mark any previous incomplete states as completed to prevent state routing issues.
+    // This ensures getActivePromptState() returns the new state for incoming chunks.
+    for (const oldState of this.promptStates) {
+      if (!oldState.completed) {
+        this.logDebug(`[chatSession] marking stale state as completed agentMessageId=${oldState.agentMessageId}`);
+        oldState.completed = true;
+      }
+    }
 
     const userMessageId = `user-${this.createId()}`;
     this.pushSnippet(renderChatUserMessageSnippet(trimmed, userMessageId));

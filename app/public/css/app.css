@@ -2561,6 +2561,8 @@ player-title,
 }
 
 .sidebar-agent-item__id {
+  display: block;
+  max-width: 100%;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
   font-size: 0.8125rem;
   font-weight: 500;

@@ -1,6 +1,7 @@
 (function () {
   var _chatSocketWrapper = null; // Global ref to htmx socketWrapper for chat session messages
   var _historyLoaded = false; // Track if history has been loaded
+  var _historyLoading = false; // Track if history is currently being loaded (skip sounds)
   var _audioContext = null; // Lazy-initialized Web Audio context
   var SIDEBAR_SCROLL_KEY = "sidebar-scroll-top";
   var NEW_AGENT_WORKDIR_KEY = "new-agent-workdir";
@@ -94,6 +95,9 @@
 
     // Use MutationObserver to detect tool status changes on tool message dots
     var observer = new MutationObserver(function (mutations) {
+      // Skip sounds while loading history
+      if (_historyLoading) return;
+
       mutations.forEach(function (mutation) {
         if (mutation.type === "attributes" && mutation.attributeName === "class") {
           var target = mutation.target;
@@ -411,6 +415,9 @@
           return;
         }
 
+        // Suppress sounds while inserting history
+        _historyLoading = true;
+
         // Insert pre-rendered HTML before the placeholder
         // Create a temporary container to parse the HTML
         var temp = document.createElement("div");
@@ -429,6 +436,12 @@
           list.appendChild(fragment);
         }
 
+        // Re-enable sounds after history is loaded.
+        // Use setTimeout to ensure MutationObserver callbacks (which are microtasks)
+        // have finished processing before we re-enable sounds.
+        setTimeout(function () {
+          _historyLoading = false;
+        }, 0);
         list.dataset.historyLoading = "false";
         list.dataset.historyLoaded = "true";
         _historyLoaded = true;
