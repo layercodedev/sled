@@ -155,7 +155,7 @@ async function ensureAgent(agentId: string, cwd: string | null, preferredPort?: 
     agentId,
     port,
     host: PROXY_HOST,
-    httpUrl: `http://${PROXY_HOST}:${port}`,
+    httpUrl: `http://${PROXY_HOST === "0.0.0.0" ? "127.0.0.1" : PROXY_HOST}:${port}`,
     cwd,
     startedAt: new Date().toISOString(),
     proxy: startProxy({
