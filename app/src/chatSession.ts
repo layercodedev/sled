@@ -38,7 +38,7 @@ interface ChatSessionOptions {
   sessionCwd?: string;
   debug?: boolean;
   /** Agent type for customizing error messages */
-  agentType?: "claude" | "gemini" | "codex";
+  agentType?: "claude" | "gemini" | "codex" | "opencode";
   /** Session ID to resume (for Claude Code agents). When provided, the agent will attempt to resume the previous session. */
   resumeSessionId?: string;
   onNewMessage?: (role: "user" | "assistant", content: string) => void;
@@ -96,7 +96,7 @@ export class ChatSession {
   private readonly createId: CreateId;
   private readonly protocol: AgentProtocolSession;
   private initialPermissionMode: string;
-  private readonly agentType: "claude" | "gemini" | "codex";
+  private readonly agentType: "claude" | "gemini" | "codex" | "opencode";
   private readonly onNewMessage?: (role: "user" | "assistant", content: string) => void;
   private readonly onToolCall?: (toolCall: ToolCallData) => void;
   private readonly onSessionReady?: (sessionId: string) => void;
@@ -155,6 +155,12 @@ export class ChatSession {
         const details = stringify(error ?? message);
         this.pushSnippet(renderChatStatusSnippet("Session error", "error"));
         this.pushSnippet(renderChatErrorSnippet(details, this.errorId()));
+      },
+      onAuthenticationRequired: (authMethod) => {
+        // Show authentication required message with instructions from the agent
+        const message = `**Authentication Required**\n\n${authMethod.description}\n\nAfter authenticating, come back and create a new agent.`;
+        this.pushSnippet(renderChatStatusSnippet("Authentication required", "error"));
+        this.pushSnippet(renderChatErrorSnippet(message, this.errorId()));
       },
       onPromptResult: (_requestId, result, metadata) => {
         const promptMeta = asPromptMetadata(metadata);
@@ -703,9 +709,10 @@ export class ChatSession {
         claude: "claude",
         gemini: "gemini",
         codex: "codex",
+        opencode: "opencode auth login",
       };
       const command = agentCommands[this.agentType] || this.agentType;
-      return `**Authentication Required**\n\nPlease run \`${command}\` in your terminal and login. Then come back and create a new agent.`;
+      return `**Authentication Required**\n\nPlease run \`${command}\` in your terminal to login. Then come back and create a new agent.`;
     }
 
     return `Agent error: ${stringify(error)}`;

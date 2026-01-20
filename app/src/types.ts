@@ -11,7 +11,7 @@ export const DEFAULT_VOICE = "Clive";
 
 export type Voice = string;
 
-export type AgentType = "gemini" | "claude" | "codex";
+export type AgentType = "gemini" | "claude" | "codex" | "opencode";
 
 export type UserRow = { id: string; email: string; created_at: string };
 
