@@ -27,7 +27,7 @@ export interface ProxyHandles {
 
 const DEFAULT_PORT = 3050;
 // Bind to all interfaces so the runtime can reach the port
-const DEFAULT_HOST = "0.0.0.0";
+const DEFAULT_HOST = "127.0.0.1";
 
 // Agent type configurations
 type AgentType = "gemini" | "claude" | "codex";

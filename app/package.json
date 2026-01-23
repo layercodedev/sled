@@ -2,7 +2,7 @@
   "name": "my-app",
   "type": "module",
   "scripts": {
-    "start": "wrangler dev --persist-to .wrangler/state",
+    "start": "wrangler dev --ip 0.0.0.0 --persist-to .wrangler/state",
     "dev": "wrangler dev --persist-to .wrangler/state",
     "deploy": "wrangler deploy --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
