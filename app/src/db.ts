@@ -73,7 +73,7 @@ export async function setUserDefaultVoice(db: D1, userId: string, voice: Voice |
 export async function listAgents(db: D1, userId: string): Promise<AgentRow[]> {
   const { results } = await db
     .prepare(
-      "SELECT id, user_id, name, title, type, yolo, workdir, voice, created_at FROM agents WHERE user_id = ? ORDER BY created_at DESC",
+      "SELECT id, user_id, name, title, codex_session_id, type, yolo, workdir, voice, created_at FROM agents WHERE user_id = ? ORDER BY created_at DESC",
     )
     .bind(userId)
     .all<AgentDbRow>();
@@ -82,8 +82,16 @@ export async function listAgents(db: D1, userId: string): Promise<AgentRow[]> {
 
 export async function getAgent(db: D1, agentId: string): Promise<AgentRow | null> {
   const row = await db
-    .prepare("SELECT id, user_id, name, title, type, yolo, workdir, voice, created_at FROM agents WHERE id = ?")
+    .prepare("SELECT id, user_id, name, title, codex_session_id, type, yolo, workdir, voice, created_at FROM agents WHERE id = ?")
     .bind(agentId)
+    .first<AgentDbRow>();
+  return row ? { ...row, yolo: row.yolo === 1 } : null;
+}
+
+export async function getAgentByCodexSessionId(db: D1, codexSessionId: string): Promise<AgentRow | null> {
+  const row = await db
+    .prepare("SELECT id, user_id, name, title, codex_session_id, type, yolo, workdir, voice, created_at FROM agents WHERE codex_session_id = ?")
+    .bind(codexSessionId)
     .first<AgentDbRow>();
   return row ? { ...row, yolo: row.yolo === 1 } : null;
 }
@@ -96,14 +104,31 @@ export async function createAgent(
   yolo: boolean,
   workdir: string | null,
   voice: Voice | null,
+  options?: { title?: string | null; createdAt?: string; codexSessionId?: string | null },
 ): Promise<AgentRow> {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
+  const createdAt = options?.createdAt ?? now;
+  const title = options?.title ?? null;
+  const codexSessionId = options?.codexSessionId ?? null;
   await db
-    .prepare("INSERT INTO agents (id, user_id, name, type, yolo, workdir, voice, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(id, userId, name ?? null, type, yolo ? 1 : 0, workdir ?? null, voice, now)
+    .prepare(
+      "INSERT INTO agents (id, user_id, name, title, codex_session_id, type, yolo, workdir, voice, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(id, userId, name ?? null, title, codexSessionId, type, yolo ? 1 : 0, workdir ?? null, voice, createdAt)
     .run();
-  return { id, user_id: userId, name: name ?? null, title: null, type, yolo, workdir: workdir ?? null, voice, created_at: now };
+  return {
+    id,
+    user_id: userId,
+    name: name ?? null,
+    title,
+    codex_session_id: codexSessionId,
+    type,
+    yolo,
+    workdir: workdir ?? null,
+    voice,
+    created_at: createdAt,
+  };
 }
 
 export async function setAgentVoice(db: D1, agentId: string, voice: Voice | null): Promise<void> {

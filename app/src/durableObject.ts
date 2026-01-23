@@ -107,6 +107,32 @@ export class SledAgent implements DurableObject {
       return new Response(null, { status: 101, webSocket: client });
     }
 
+    if (url.pathname === "/history/import") {
+      const method = request.method.toUpperCase();
+      if (method !== "POST") {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+      await this.ensureMessagesTable();
+      const sql = this.ctx.storage.sql;
+      const data = (await request.json().catch(() => ({}))) as {
+        messages?: Array<{ role?: string; content?: string; created_at?: string }>;
+      };
+      const messages = Array.isArray(data.messages) ? data.messages : [];
+      let imported = 0;
+      for (const message of messages) {
+        const role = typeof message.role === "string" ? message.role : null;
+        const content = typeof message.content === "string" ? message.content : null;
+        if (!role || !content) continue;
+        const createdAt = typeof message.created_at === "string" ? message.created_at : new Date().toISOString();
+        const id = crypto.randomUUID();
+        await sql.exec("INSERT INTO messages (id, role, content, created_at) VALUES (?, ?, ?, ?)", id, role, content, createdAt);
+        imported += 1;
+      }
+      return new Response(JSON.stringify({ ok: true, imported }), {
+        headers: { "content-type": "application/json" },
+      });
+    }
+
     if (url.pathname === "/history") {
       const method = request.method.toUpperCase();
       await this.ensureMessagesTable();
