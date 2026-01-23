@@ -7,7 +7,7 @@ import { jsxRenderer } from "hono/jsx-renderer";
 export { SledAgent } from "./durableObject";
 
 // Internal imports
-import type { Bindings, AgentStatusResponse } from "./types";
+import type { Bindings, AgentStatusResponse, CodexHistoryResponse } from "./types";
 import { DEFAULT_VOICE } from "./types";
 import {
   getDefaultUser,
@@ -17,6 +17,7 @@ import {
   setUserDefaultVoice,
   listAgents,
   getAgent,
+  getAgentByCodexSessionId,
   createAgent,
   setAgentVoice,
   setAgentTitle,
@@ -56,6 +57,135 @@ async function fetchRunningAgentIds(env: Bindings, agentIds: string[]): Promise<
     // Failed to fetch statuses, return empty set (all stopped)
   }
   return new Set();
+}
+
+async function fetchHistoryJson(instance: DurableObjectStub, agentId: string, isDebug: boolean): Promise<{ messages: unknown[] }> {
+  const response = await instance.fetch(
+    new Request("https://agent/history", {
+      method: "GET",
+      headers: { "X-AGENT-ID": agentId },
+    }),
+  );
+  if (!response.ok) {
+    const error = new Error(`history_fetch_failed status=${response.status}`);
+    if (isDebug) console.error(`[history] DO returned error status=${response.status}`);
+    throw error;
+  }
+  const data = (await response.json()) as { messages?: unknown[] };
+  return { messages: Array.isArray(data.messages) ? data.messages : [] };
+}
+
+async function fetchCodexHistory(
+  env: Bindings,
+  params: URLSearchParams,
+  isDebug: boolean,
+): Promise<CodexHistoryResponse | null> {
+  const managerUrl = getLocalAgentManagerUrl(env);
+  const historyUrl = `${managerUrl}/codex/history?${params.toString()}`;
+  if (isDebug) console.log(`[history] fetching codex history from=${historyUrl}`);
+  let historyResponse: Response;
+  try {
+    historyResponse = await fetch(historyUrl);
+  } catch (err) {
+    if (isDebug) console.error(`[history] codex history fetch failed`, err);
+    return null;
+  }
+  if (!historyResponse.ok) {
+    if (isDebug) console.error(`[history] codex history error status=${historyResponse.status}`);
+    return null;
+  }
+  const historyData = (await historyResponse.json()) as CodexHistoryResponse;
+  return historyData;
+}
+
+async function importHistoryMessages(
+  env: Bindings,
+  agentId: string,
+  messages: Array<{ role: string; content: string; created_at?: string }>,
+  isDebug: boolean,
+): Promise<number> {
+  if (messages.length === 0) return 0;
+  const instance = getAgentSession(env, agentId);
+  const importResponse = await instance.fetch(
+    new Request("https://agent/history/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-AGENT-ID": agentId },
+      body: JSON.stringify({ messages }),
+    }),
+  );
+  if (!importResponse.ok) {
+    if (isDebug) console.error(`[history] import failed status=${importResponse.status}`);
+    return 0;
+  }
+  const importData = (await importResponse.json()) as { imported?: number };
+  const imported = typeof importData.imported === "number" ? importData.imported : messages.length;
+  if (isDebug) console.log(`[history] imported messages count=${imported}`);
+  return imported;
+}
+
+function formatSessionLabel(createdAt?: string): string {
+  if (!createdAt) return "Codex session";
+  const date = new Date(createdAt);
+  if (!Number.isFinite(date.getTime())) return "Codex session";
+  const stamp = date.toISOString().slice(0, 16).replace("T", " ");
+  return `Codex ${stamp} UTC`;
+}
+
+function getPathBasename(value: string | null): string | null {
+  if (!value) return null;
+  const parts = value.split("/").filter(Boolean);
+  if (parts.length === 0) return null;
+  return parts[parts.length - 1];
+}
+
+async function syncCodexSessions(env: Bindings, user: { id: string; default_voice: string | null }, isDebug: boolean): Promise<void> {
+  const params = new URLSearchParams({
+    maxSessions: "10",
+    maxMessages: "500",
+  });
+  const historyData = await fetchCodexHistory(env, params, isDebug);
+  if (!historyData?.ok || !Array.isArray(historyData.sessions) || historyData.sessions.length === 0) {
+    if (isDebug) console.log(`[history] codex sessions empty`);
+    return;
+  }
+
+  for (const session of historyData.sessions) {
+    const sessionId = session.sessionId;
+    if (!sessionId) continue;
+    const existing = await getAgentByCodexSessionId(env.DB, sessionId);
+    if (existing) continue;
+
+    const cwd = session.cwd ?? null;
+    const base = getPathBasename(cwd);
+    const title = `${formatSessionLabel(session.created_at)}${base ? ` (${base})` : ""}`;
+    const createdAt = session.created_at ?? new Date().toISOString();
+    const voice = user.default_voice || DEFAULT_VOICE;
+    const agent = await createAgent(env.DB, user.id, null, "codex", false, cwd, voice, {
+      title,
+      createdAt,
+      codexSessionId: sessionId,
+    });
+
+    const messages = Array.isArray(session.messages) ? session.messages : [];
+    await importHistoryMessages(env, agent.id, messages, isDebug);
+  }
+}
+
+async function importCodexSessionHistory(env: Bindings, agent: { id: string; codex_session_id: string | null }, isDebug: boolean): Promise<number> {
+  if (!agent.codex_session_id) return 0;
+  const params = new URLSearchParams({
+    sessionId: agent.codex_session_id,
+    maxSessions: "1",
+    maxMessages: "500",
+  });
+  const historyData = await fetchCodexHistory(env, params, isDebug);
+  if (!historyData?.ok || !Array.isArray(historyData.sessions) || historyData.sessions.length === 0) {
+    if (isDebug) console.log(`[history] codex session empty sessionId=${agent.codex_session_id}`);
+    return 0;
+  }
+  const session = historyData.sessions[0];
+  const messages = Array.isArray(session.messages) ? session.messages : [];
+  return importHistoryMessages(env, agent.id, messages, isDebug);
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -263,6 +393,12 @@ app.get("/agents/test/ws", async (c) => {
 
 app.get("/agents", async (c) => {
   const user = await getDefaultUserWithKey(c.env.DB);
+  const isDebug = debugEnabled(c.env);
+  try {
+    await syncCodexSessions(c.env, { id: user.id, default_voice: user.default_voice ?? null }, isDebug);
+  } catch (err) {
+    if (isDebug) console.error(`[history] codex sync failed`, err);
+  }
   const agents = await listAgents(c.env.DB, user.id);
   const runningAgentIds = await fetchRunningAgentIds(
     c.env,
@@ -317,28 +453,37 @@ app.get("/agents/:agentId/history", async (c) => {
   const isDebug = debugEnabled(c.env);
   if (isDebug) console.log(`[history] fetching history for agent=${agentId} format=${format}`);
   try {
+    const agent = await getAgent(c.env.DB, agentId);
     const instance = getAgentSession(c.env, agentId);
+    let history = await fetchHistoryJson(instance, agentId, isDebug);
+
+    if (agent?.codex_session_id && history.messages.length === 0) {
+      const imported = await importCodexSessionHistory(c.env, { id: agentId, codex_session_id: agent.codex_session_id }, isDebug);
+      if (imported > 0) {
+        history = await fetchHistoryJson(instance, agentId, isDebug);
+      }
+    }
+
     // Pass format query parameter to DO
     const doUrl = format ? `https://agent/history?format=${format}` : "https://agent/history";
-    const response = await instance.fetch(
-      new Request(doUrl, {
-        method: "GET",
-        headers: { "X-AGENT-ID": agentId },
-      }),
-    );
-    if (!response.ok) {
-      if (isDebug) console.error(`[history] DO returned error status=${response.status}`);
-      return c.json({ messages: [], error: "Failed to fetch history" }, 500);
-    }
-    // Return HTML directly when format=html
     if (format === "html") {
+      const response = await instance.fetch(
+        new Request(doUrl, {
+          method: "GET",
+          headers: { "X-AGENT-ID": agentId },
+        }),
+      );
+      if (!response.ok) {
+        if (isDebug) console.error(`[history] DO returned error status=${response.status}`);
+        return c.json({ messages: [], error: "Failed to fetch history" }, 500);
+      }
       const html = await response.text();
       if (isDebug) console.log(`[history] returning HTML len=${html.length}`);
       return c.html(html);
     }
-    const data = await response.json();
-    if (isDebug) console.log(`[history] got ${(data as { messages?: unknown[] }).messages?.length ?? 0} messages`);
-    return c.json(data);
+
+    if (isDebug) console.log(`[history] got ${history.messages.length} messages`);
+    return c.json(history);
   } catch (err) {
     if (isDebug) console.error(`[history] error fetching history:`, err);
     return c.json({ messages: [], error: "Failed to fetch history" }, 500);

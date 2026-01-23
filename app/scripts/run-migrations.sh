@@ -19,6 +19,7 @@ files=(
   "migrations/0005_default_user.sql"
   "migrations/0006_voice_selection.sql"
   "migrations/0007_agent_title.sql"
+  "migrations/0008_agent_codex_session.sql"
 )
 
 for file in "${files[@]}"; do

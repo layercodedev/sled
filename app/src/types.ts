@@ -26,6 +26,7 @@ export type AgentRow = {
   user_id: string;
   name: string | null;
   title: string | null;
+  codex_session_id: string | null;
   type: AgentType;
   yolo: boolean;
   workdir: string | null;
@@ -78,6 +79,32 @@ export type AgentStatusResponse = {
     cwd: string | null;
     startedAt: string | null;
   }>;
+};
+
+export type CodexHistoryMessage = {
+  role: "user" | "assistant";
+  content: string;
+  created_at?: string;
+};
+
+export type CodexHistoryResponse = {
+  ok: boolean;
+  messages: CodexHistoryMessage[];
+  sessions?: Array<{
+    sessionId: string | null;
+    cwd: string | null;
+    created_at?: string;
+    messages: CodexHistoryMessage[];
+  }>;
+  source?: {
+    baseDir?: string;
+    files?: string[];
+    sessions?: string[];
+    truncated?: boolean;
+    cwdFilter?: string | null;
+    sessionIdFilter?: string | null;
+  };
+  error?: string;
 };
 
 // Response with optional webSocket property (Cloudflare Workers extension)

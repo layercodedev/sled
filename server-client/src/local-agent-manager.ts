@@ -7,6 +7,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { startProxy, type ProxyHandles } from "./acp-ws-proxy";
+import { loadCodexHistory } from "./codex-history";
 import { findAvailablePort } from "./portSelector";
 
 interface AgentRecord {
@@ -99,6 +100,22 @@ async function routeRequest(req: IncomingMessage, res: ServerResponse): Promise<
 
   if (req.method === "GET" && req.url === "/health") {
     sendJson(res, 200, { ok: true });
+    return;
+  }
+
+  if (req.method === "GET" && req.url.startsWith("/codex/history")) {
+    const url = new URL(req.url, `http://${MANAGER_HOST}:${MANAGER_PORT}`);
+    const workdir = url.searchParams.get("workdir");
+    const sessionId = url.searchParams.get("sessionId");
+    const maxSessions = parsePositiveInt(url.searchParams.get("maxSessions"), 10);
+    const maxMessages = parsePositiveInt(url.searchParams.get("maxMessages"), 500);
+    const result = await loadCodexHistory({
+      workdir,
+      maxSessions,
+      maxMessages,
+      sessionId,
+    });
+    sendJson(res, 200, { ok: true, messages: result.messages, sessions: result.sessions, source: result.source });
     return;
   }
 
@@ -207,6 +224,12 @@ export function normalizeCwd(value: unknown): string | null {
     return null;
   }
   return resolved;
+}
+
+function parsePositiveInt(value: string | null, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 async function readJsonBody<T>(req: IncomingMessage): Promise<T> {

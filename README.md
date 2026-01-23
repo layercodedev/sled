@@ -106,6 +106,10 @@ Your agent works. When it's done, you hear what it did.
 Want me to add the CSS variables too?"
 ```
 
+## Codex History Sync
+
+On first load, Sled scans `~/.codex/sessions` and creates one Sled agent per recent Codex session. Each imported session shows up as its own sidebar entry (no mixed history). Sled stores the Codex session ID to avoid duplicate imports.
+
 ## Remote Mobile Access
 
 > **⚠️ Secure your tunnel.** If you expose your machine without proper authentication (e.g. ngrok without `--basic-auth`), anyone can control your entire computer. Coding agents can run commands, read files, and more. Use strong passwords.
