@@ -370,7 +370,7 @@ function renderPermissionPromptArticle(data: PermissionPromptData, swap?: "outer
 
 interface SidebarAgentState {
   agentId: string;
-  agentType: "claude" | "gemini" | "codex";
+  agentType: "claude" | "gemini" | "codex" | "opencode";
   isWorking: boolean;
   isRunning: boolean;
   attentionType: AttentionType;
@@ -468,7 +468,7 @@ export function renderSidebarAgentStateSnippet(state: SidebarAgentState): string
         {state.isRunning ? "Running" : "Stopped"}
       </span>
       {/* Agent type */}
-      <span class="sidebar-agent-item__type">{state.agentType === "claude" ? "Claude" : state.agentType === "codex" ? "Codex" : "Gemini"}</span>
+      <span class="sidebar-agent-item__type">{state.agentType === "claude" ? "Claude" : state.agentType === "codex" ? "Codex" : state.agentType === "opencode" ? "OpenCode" : "Gemini"}</span>
       {state.isWorking && activityText && (
         <div class="sidebar-agent-item__tool-call">
           <span class="sidebar-agent-item__spinner"></span>

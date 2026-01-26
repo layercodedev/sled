@@ -47,6 +47,8 @@ export interface AgentProtocolSessionOptions {
   onInitializeError?: (error: unknown, message: Record<string, unknown>) => void;
   onSessionReady?: (sessionId: string) => void;
   onSessionError?: (error: unknown, message: Record<string, unknown>) => void;
+  /** Called when agent requires authentication (e.g., opencode-login) */
+  onAuthenticationRequired?: (authMethod: { id: string; name: string; description: string }) => void;
   onPromptQueued?: (requestId: string, text: string, metadata: unknown) => void;
   onPromptSent?: (requestId: string, text: string, metadata: unknown) => void;
   onPromptResult?: (requestId: string, result: Record<string, unknown>, metadata: unknown) => void;
@@ -92,11 +94,20 @@ export class AgentProtocolSession {
       }
       this.initializationComplete = true;
       // Check if agent advertises auth methods that require explicit authenticate call
-      const authMethods = readAuthMethodIds(payload.result);
+      const authMethods = readAuthMethods(payload.result);
+      const authMethodIds = authMethods?.map((m) => m.id) ?? [];
       // Only call authenticate for gemini-api-key; claude-login is informational only
       // (Claude Code ACP doesn't implement authenticate - API key passed via env)
-      if (authMethods && authMethods.includes("gemini-api-key")) {
+      if (authMethodIds.includes("gemini-api-key")) {
         this.dispatchAuthenticate("gemini-api-key");
+      } else if (authMethodIds.includes("opencode-login")) {
+        // OpenCode requires user to run `opencode auth login` in terminal
+        const method = authMethods?.find((m) => m.id === "opencode-login");
+        if (method) {
+          this.options.onAuthenticationRequired?.(method);
+        }
+        // Don't proceed to session/new - agent can't work without auth
+        return true;
       } else {
         this.dispatchSessionNew();
       }
@@ -477,18 +488,28 @@ function readArray(value: unknown): unknown[] | null {
   return Array.isArray(value) ? value : null;
 }
 
-function readAuthMethodIds(result: unknown): string[] | null {
+interface AuthMethod {
+  id: string;
+  name: string;
+  description: string;
+}
+
+function readAuthMethods(result: unknown): AuthMethod[] | null {
   const obj = readObject(result);
   if (!obj) return null;
   const methods = readArray(obj.authMethods);
   if (!methods || methods.length === 0) return [];
-  const ids: string[] = [];
+  const authMethods: AuthMethod[] = [];
   for (const m of methods) {
     const rec = readObject(m);
     const id = rec ? readString(rec.id) : null;
-    if (id) ids.push(id);
+    const name = rec ? readString(rec.name) : null;
+    const description = rec ? readString(rec.description) : null;
+    if (id) {
+      authMethods.push({ id, name: name ?? id, description: description ?? "" });
+    }
   }
-  return ids;
+  return authMethods;
 }
 
 function readPermissionOptions(value: unknown): PermissionRequestOption[] | null {

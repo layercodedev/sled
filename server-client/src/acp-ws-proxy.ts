@@ -30,7 +30,7 @@ const DEFAULT_PORT = 3050;
 const DEFAULT_HOST = "127.0.0.1";
 
 // Agent type configurations
-type AgentType = "gemini" | "claude" | "codex";
+type AgentType = "gemini" | "claude" | "codex" | "opencode";
 function normalizeEnvValue(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -48,6 +48,7 @@ const AGENT_CONFIGS: Record<AgentType, { command: string; args: string[] }> = {
   gemini: { command: "gemini", args: ["--experimental-acp"] },
   claude: { command: "claude-code-acp", args: [] },
   codex: { command: "codex-acp", args: [] },
+  opencode: { command: "opencode", args: ["acp"] },
 };
 
 type SpawnEnvConfig = {
@@ -147,7 +148,11 @@ export function startProxy(options: ProxyOptions = {}): ProxyHandles {
 
     // Determine agent type from envVars (sent by client via /config)
     const agentTypeRaw = envVars?.AGENT_TYPE || "gemini";
-    const agentType: AgentType = agentTypeRaw === "claude" ? "claude" : agentTypeRaw === "codex" ? "codex" : "gemini";
+    const agentType: AgentType =
+      agentTypeRaw === "claude" ? "claude" :
+      agentTypeRaw === "codex" ? "codex" :
+      agentTypeRaw === "opencode" ? "opencode" :
+      "gemini";
     const yoloMode = envVars?.YOLO_MODE === "1";
     console.log(`${prefix} Config: agentType=${agentType}, yoloMode=${yoloMode}`);
     const agentConfig = AGENT_CONFIGS[agentType];

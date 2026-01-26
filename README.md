@@ -1,6 +1,6 @@
 # Sled 🛷
 
-Use your desktop Claude Code, Codex or Gemini CLI coding agent from your phone. With voice.
+Use your desktop Claude Code, Codex, Gemini CLI or OpenCode coding agent from your phone. With voice.
 
 <p align="center">
   <img src="https://assets.layercode.com/mockup.gif" alt="Sled demo" width="400">
@@ -10,7 +10,7 @@ Use your desktop Claude Code, Codex or Gemini CLI coding agent from your phone. 
 
 ## Quick Overview
 
-**What is it?** A web UI that runs locally on your computer. It spawns local Claude Code, Codex or Gemini CLI cli agents processes on your computer. This is the same coding cli you alreay use, but we start it in a headless API mode and wrap it in a web UI. We added transcription and text-to-speech so you can talk to it and hear its responses. The web UI works great on mobile, so you can share your localhost and code from anywhere.
+**What is it?** A web UI that runs locally on your computer. It spawns local Claude Code, Codex, Gemini CLI or OpenCode agent processes on your computer. This is the same coding cli you already use, but we start it in a headless API mode and wrap it in a web UI. We added transcription and text-to-speech so you can talk to it and hear its responses. The web UI works great on mobile, so you can share your localhost and code from anywhere.
 
 **Do I need to deploy anything?** No. Sled runs 100% on your machine. It's written in Typescript (and runs with wrangler locally). Nothing is deployed to the cloud.
 
@@ -40,6 +40,7 @@ That's why Sled exists.
 | Claude Code | ✔ |
 | OpenAI Codex | ✔ |
 | Gemini CLI | ✔ |
+| OpenCode | ✔ |
 
 ## Install
 
@@ -75,6 +76,11 @@ npm install -g @zed-industries/codex-acp
 # Gemini CLI
 npm install -g @google/gemini-cli@latest
 # Gemini supports Agent Control Protocol natively
+
+# OpenCode
+npm install -g opencode-ai@latest
+# OpenCode supports Agent Control Protocol natively
+# Run `opencode auth login` to authenticate
 ```
 
 Start Sled:
@@ -129,6 +135,7 @@ Use a strong password. This exposes your machine to the internet.
 │   Phone     │ ◄───Tailscale────► │    Sled      │ ◄───ACP──────────► │ Claude Code │
 │  (browser)  │                    │  (your Mac)  │                    │    Codex    │
 │             │                    │              │                    │    Gemini   │
+│             │                    │              │                    │   OpenCode  │
 └─────────────┘                    └──────────────┘                    └─────────────┘
 ```
 

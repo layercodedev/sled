@@ -290,7 +290,7 @@ app.post("/agents/new", async (c) => {
   const form = await c.req.parseBody();
   const name = (form["name"] ? String(form["name"]) : null) || null;
   const typeRaw = form["type"] ? String(form["type"]) : "gemini";
-  const type = typeRaw === "claude" ? "claude" : typeRaw === "codex" ? "codex" : "gemini";
+  const type = typeRaw === "claude" ? "claude" : typeRaw === "codex" ? "codex" : typeRaw === "opencode" ? "opencode" : "gemini";
   const yolo = form["yolo"] === "on" || form["yolo"] === "1";
   // Determine voice: use selected voice, or user's default, or "Clive"
   const voiceRaw = form["voice"] ? String(form["voice"]).trim() : null;

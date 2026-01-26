@@ -288,6 +288,11 @@ main.container.player-view {
   color: #065f46;
 }
 
+.agent-type-badge--opencode {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
 .agents-empty {
   text-align: center;
   padding: 3rem 1.5rem;

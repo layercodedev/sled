@@ -44,7 +44,7 @@ export class SledAgent implements DurableObject {
   private isWorking = false;
   private isRunning = false; // Set from local agent manager status
   private agentId: string | null = null; // Set on first sidebar/chat connection
-  private agentType: "claude" | "gemini" | "codex" = "claude"; // Set on chat connection
+  private agentType: "claude" | "gemini" | "codex" | "opencode" = "claude"; // Set on chat connection
   // Track attention type in memory for broadcasts (also persisted in storage)
   private attentionType: AttentionType = null;
 
@@ -375,7 +375,7 @@ export class SledAgent implements DurableObject {
     if (!this.agentId) this.agentId = agentId;
     const agentType = (request.headers.get("X-AGENT-TYPE") || "claude") as AgentType;
     // Store agentType for sidebar broadcasts
-    this.agentType = agentType === "claude" || agentType === "gemini" || agentType === "codex" ? agentType : "claude";
+    this.agentType = agentType === "claude" || agentType === "gemini" || agentType === "codex" || agentType === "opencode" ? agentType : "claude";
     const apiKey = request.headers.get("X-API-KEY") || "";
     const yolo = request.headers.get("X-YOLO") === "1";
     const resolvedApiKey = apiKey.trim();
@@ -397,9 +397,10 @@ export class SledAgent implements DurableObject {
       if (resolvedApiKey) {
         if (agentType === "claude" || agentType === "codex") {
           envVars.ANTHROPIC_API_KEY = resolvedApiKey;
-        } else {
+        } else if (agentType === "gemini") {
           envVars.GEMINI_API_KEY = resolvedApiKey;
         }
+        // OpenCode uses its own configuration system, no API key env var needed
       }
       if (runtime.cwd) {
         envVars.AGENT_CWD = runtime.cwd;

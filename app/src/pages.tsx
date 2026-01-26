@@ -81,7 +81,7 @@ export const AppShell = ({ agents, currentAgentId, runningAgentIds, voiceWorkerB
                           {isRunning ? "Running" : "Stopped"}
                         </span>
                         <span class="sidebar-agent-item__type">
-                          {a.type === "claude" ? "Claude" : a.type === "codex" ? "Codex" : "Gemini"}
+                          {a.type === "claude" ? "Claude" : a.type === "codex" ? "Codex" : a.type === "opencode" ? "OpenCode" : "Gemini"}
                         </span>
                       </div>
                     </div>
@@ -179,6 +179,7 @@ export const NewAgentPage = ({ defaultVoice, voiceWorkerBaseUrl }: NewAgentPageP
                 <option value="claude">Claude Code</option>
                 <option value="gemini">Gemini CLI</option>
                 <option value="codex">Codex</option>
+                <option value="opencode">OpenCode</option>
               </select>
             </div>
             <div class="new-agent-form__option">
@@ -237,7 +238,7 @@ type AgentChatPageProps = {
 
 export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir, wsPath, voiceWsUrl, debug }: AgentChatPageProps) => {
   const cid = crypto.randomUUID();
-  const typeLabel = agentType === "claude" ? "Claude" : agentType === "codex" ? "Codex" : "Gemini";
+  const typeLabel = agentType === "claude" ? "Claude" : agentType === "codex" ? "Codex" : agentType === "opencode" ? "OpenCode" : "Gemini";
   const displayTitle = title || "New session";
   const workdirLabel = workdir ? workdir : null;
 
@@ -264,11 +265,11 @@ export const AgentChatPage = ({ agentId, agentType, title, yolo, voice, workdir,
         </div>
         <div class="chat-app__status" style="display:flex; align-items:center; gap:0.75rem;">
           <span
-            class={`agent-type-badge ${agentType === "claude" ? "agent-type-badge--claude" : agentType === "codex" ? "agent-type-badge--codex" : "agent-type-badge--gemini"}`}
+            class={`agent-type-badge ${agentType === "claude" ? "agent-type-badge--claude" : agentType === "codex" ? "agent-type-badge--codex" : agentType === "opencode" ? "agent-type-badge--opencode" : "agent-type-badge--gemini"}`}
           >
             {typeLabel}
           </span>
-          {(agentType === "claude" || agentType === "codex") && (
+          {(agentType === "claude" || agentType === "codex" || agentType === "opencode") && (
             <select
               id="permission-mode"
               class="chat-app__select"
