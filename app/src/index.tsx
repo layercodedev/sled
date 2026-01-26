@@ -1,6 +1,7 @@
 // Main entry point - Hono app with routes
 
 import { Hono } from "hono";
+import { basicAuth } from "hono/basic-auth";
 import { jsxRenderer } from "hono/jsx-renderer";
 
 // Re-export the Durable Object for Cloudflare Workers
@@ -59,6 +60,15 @@ async function fetchRunningAgentIds(env: Bindings, agentIds: string[]): Promise<
 }
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+app.use("*", async (c, next) => {
+  const authUser = c.env.BASIC_AUTH_USER?.trim();
+  const authPass = c.env.BASIC_AUTH_PASS?.trim();
+  if (!authUser || !authPass) {
+    return next();
+  }
+  return basicAuth({ username: authUser, password: authPass })(c, next);
+});
 
 // Subdomain routing: AGENTID.layercode.ai or AGENTID.localhost (reserved for future app proxy)
 app.use("*", async (c, next) => {

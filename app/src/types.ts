@@ -87,6 +87,8 @@ export type Bindings = {
   SLED_AGENT: DurableObjectNamespace<import("./durableObject").SledAgent>;
   LOCAL_AGENT_MANAGER_URL?: string;
   DEBUG_LOG?: string;
+  BASIC_AUTH_USER?: string;
+  BASIC_AUTH_PASS?: string;
   DB: D1Database;
   // Google AI API key (for generating conversation titles)
   GOOGLE_AI_API_KEY?: string;

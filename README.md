@@ -153,7 +153,9 @@ Use a strong password. This exposes your machine to the internet.
 
 ## Optional Configuration
 
-Sled reads runtime options from environment variables (e.g. `.dev.vars` or `wrangler.jsonc`).
+Sled reads runtime options from environment variables (e.g. `app/.dev.vars` for `wrangler dev`, or `wrangler.jsonc` for production).
+
+- `BASIC_AUTH_USER` + `BASIC_AUTH_PASS` (optional): Enable app-level HTTP Basic Auth. If either is unset, auth is disabled. For local dev, put them in `app/.dev.vars`. For production, use `wrangler secret put` or your deploy env.
 
 - `DISABLE_VOICE_MODE` (optional): Set to any non-empty value other than `false` to disable voice mode and all connections to layercode.com's voice API. Leave unset/empty/`false` to keep voice mode enabled.
 
